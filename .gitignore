@@ -49,3 +49,7 @@ release/
 # VitePress output folders
 dist/
 cache/
+docs/.vitepress
+
+# Emacs droppings
+*~
