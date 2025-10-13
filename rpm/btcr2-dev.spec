@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        1.0.0
+Version:        1.0.1
 Release:        1%{?dist}
 Summary:        Static website
 
