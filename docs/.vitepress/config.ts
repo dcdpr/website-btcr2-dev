@@ -8,6 +8,9 @@ export default withMermaid(
     title: 'did:btcr2',
     description: 'A censorship-resistant DID Method using the Bitcoin blockchain as a Verifiable Data Registry to announce changes to the DID document.',
     cleanUrls: true,
+    build: {
+      minify: false
+    },
     base: '/',
     mermaid: {
       securityLevel: 'loose',
