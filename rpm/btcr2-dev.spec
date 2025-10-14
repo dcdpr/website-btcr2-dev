@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        1.0.2
+Version:        1.0.3
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -30,10 +30,12 @@ mkdir -p %{buildroot}/var/www/%{name}
 # install static files
 cp -r docs/.vitepress/dist/* %{buildroot}/var/www/%{name}/
 
-
 %files
 %defattr(-,root,root,-)
 /var/www/%{name}
+
+%clean
+rm -rf %{buildroot}
 
 %pre
 
