@@ -1,21 +1,12 @@
 import { defineConfig } from 'vitepress'
-import { withMermaid } from 'vitepress-plugin-mermaid'
 import wasm from 'vite-plugin-wasm'
 import topLevelAwait from 'vite-plugin-top-level-await'
 
-export default withMermaid(
-  defineConfig({
+export default defineConfig({
     title: 'did:btcr2',
     description: 'A censorship-resistant DID Method using the Bitcoin blockchain as a Verifiable Data Registry to announce changes to the DID document.',
     cleanUrls: true,
     base: '/',
-    mermaid: {
-      securityLevel: 'loose',
-      theme: 'default'
-    },
-    mermaidPlugin: {
-      class: 'mermaid'
-    },
     vite: {
       server: {
         proxy: {
@@ -42,7 +33,7 @@ export default withMermaid(
       nav: [
         { text: 'Home', link: '/' },
         { text: 'Specification', link: '/spec' },
-        { text: 'Diagrams', link: '/diagrams' }
+        // { text: 'Diagrams', link: '/diagrams' }
       ],
       footer: {
         copyright: 'Copyright © 2025 Digital Contract Design'
@@ -52,10 +43,10 @@ export default withMermaid(
           text: 'Specification',
           link: '/spec'
         },
-        {
-          text: 'Diagrams',
-          link: '/diagrams'
-        },
+        // {
+        //   text: 'Diagrams',
+        //   link: '/diagrams'
+        // },
         {
           text: 'Demo',
           link: '/demo'
@@ -74,4 +65,3 @@ export default withMermaid(
       socialLinks: [{ icon: 'github', link: 'https://github.com/dcdpr/did-btcr2' }]
     },
   })
-)
