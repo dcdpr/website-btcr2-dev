@@ -61,8 +61,7 @@ function replacer(_key: string, value: unknown): unknown {
 </script>
 
 <template>
-  <ClientOnly>
-    <div class="demo-card">
+  <div class="demo-card">
       <h3 v-if="props.title" class="demo-title">{{ props.title }}</h3>
 
       <div class="demo-inputs">
@@ -98,8 +97,7 @@ function replacer(_key: string, value: unknown): unknown {
         <CopyButton :text="props.snippet" label="Copy code" />
         <pre class="hljs"><code v-html="highlightedSnippet"></code></pre>
       </details>
-    </div>
-  </ClientOnly>
+  </div>
 </template>
 
 <style scoped>

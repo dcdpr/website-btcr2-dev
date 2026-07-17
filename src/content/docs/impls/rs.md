@@ -1,4 +1,6 @@
-# Rust
+---
+title: Rust
+---
 
 The Rust reference implementation lives at
 [`dcdpr/did-btcr2-rs`](https://github.com/dcdpr/did-btcr2-rs).

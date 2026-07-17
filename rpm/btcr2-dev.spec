@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        1.1.0
+Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -13,7 +13,7 @@ Requires:       nginx
 BuildArch:      noarch
 
 %description
-DCD's static website built with the 'vitepress' framework.
+DCD's static website built with the Astro 'starlight' framework.
 This package includes the built static files and nginx configuration.
 
 %prep
@@ -28,7 +28,7 @@ npm run build
 mkdir -p %{buildroot}/var/www/%{name}
 
 # install static files
-cp -r docs/.vitepress/dist/* %{buildroot}/var/www/%{name}/
+cp -r dist/* %{buildroot}/var/www/%{name}/
 
 %files
 %defattr(-,root,root,-)
@@ -54,6 +54,10 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
+* Fri Jul 17 2026 jintekc <github@jintek.consulting> - 2.0.0-1
+- Migrate the site to Astro Starlight (build output moves from
+  docs/.vitepress/dist to dist).
+
 * Fri Jul 17 2026 jintekc <github@jintek.consulting> - 1.1.0-1
 - Fix Resolve demo: route mempool.space through the site's same-origin
   /mempool nginx proxy via api config (no more global fetch patching).

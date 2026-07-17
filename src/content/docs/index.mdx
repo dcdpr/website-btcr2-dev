@@ -1,0 +1,47 @@
+---
+title: did:btcr2
+description: A censorship-resistant DID Method using the Bitcoin blockchain as a Verifiable Data Registry to announce changes to the DID document.
+template: splash
+hero:
+  title: did:btcr2
+  tagline: 'Bitcoin Reference 2.0: a censorship-resistant DID Method using the Bitcoin blockchain as a Verifiable Data Registry to announce changes to the DID document.'
+  actions:
+    - text: Getting Started
+      link: /impls/
+      variant: primary
+    - text: Demo
+      link: /demo/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+  <Card title="🛡️ Censorship Resistant">
+    Anchored directly to the Bitcoin blockchain, did:btcr2 ensures DIDs cannot be blocked,
+    erased, or overwritten, protecting identity operations from central or state-level
+    interference.
+  </Card>
+  <Card title="🕵️ Private">
+    Avoids reliance on public registries by enabling the secure sidecar delivery of DID
+    Documents (transferred directly from controller to relying party), preserving privacy
+    by default.
+  </Card>
+  <Card title="🔏 Non-Repudiation with Time Anchoring">
+    Every update is immutably timestamped using Bitcoin, preventing late publishing and
+    enabling a cryptographic chain-of-custody suitable for high-stakes contracts.
+  </Card>
+  <Card title="🔄 Pairwise Non-Correlation">
+    Supports private, purpose-specific identifiers for each relationship or task,
+    significantly reducing the risk of tracking or correlation across digital interactions.
+  </Card>
+  <Card title="⚡ Efficient & Scalable Updates">
+    DID creation is possible entirely off-chain at zero cost, while updates can be
+    aggregated, making long-term maintenance on Bitcoin practical and economical.
+  </Card>
+  <Card title="🔐 Closed-Loop Resolution">
+    DID identifiers remain stable over time, even with frequent updates, making did:btcr2
+    suitable for lasting relationships, recurring interactions, and durable digital
+    identities.
+  </Card>
+</CardGrid>

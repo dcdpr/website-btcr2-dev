@@ -1,31 +1,33 @@
 {
   "name": "btcr2-dev",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "vitepress dev docs",
-    "build": "vitepress build docs",
-    "serve": "vitepress serve docs",
-    "preview": "vitepress preview docs --port 8080",
-    "typecheck": "vue-tsc --noEmit -p docs/.vitepress/tsconfig.json",
-    "clean": "rimraf node_modules pnpm-lock.yaml docs/.vitepress/cache docs/.vitepress/dist"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "clean": "rimraf node_modules pnpm-lock.yaml .astro dist"
   },
   "keywords": [],
   "license": "MPL-2.0",
   "packageManager": "pnpm@10.16.1",
   "devDependencies": {
-    "@types/node": "^24.5.0",
-    "mermaid": "^11.11.0",
+    "@astrojs/check": "^0.9.9",
     "rimraf": "^6.0.1",
-    "vitepress": "^1.6.4",
-    "vue": "^3.5.21",
-    "vue-tsc": "^2.1.10"
+    "typescript": "^5.9.0"
   },
   "dependencies": {
+    "@astrojs/starlight": "^0.41.3",
+    "@astrojs/vue": "^7.0.1",
     "@did-btcr2/api": "^0.17.0",
     "@did-btcr2/common": "^9.1.0",
     "@did-btcr2/keypair": "^0.13.1",
-    "highlight.js": "^11.11.1"
+    "astro": "^7.1.1",
+    "astro-mermaid": "^2.1.0",
+    "highlight.js": "^11.11.1",
+    "mermaid": "^11.11.0",
+    "vue": "^3.5.21"
   }
 }

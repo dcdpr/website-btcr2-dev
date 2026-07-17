@@ -1,4 +1,6 @@
-# Cross-impl Parity Matrix
+---
+title: Cross-impl Parity Matrix
+---
 
 A quick snapshot of which `did:btcr2` features each implementation supports
 today. Use it to pick an implementation that fits your stack.
