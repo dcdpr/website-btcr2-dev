@@ -36,12 +36,11 @@ There is no test or lint script. Run `pnpm typecheck && pnpm build` before commi
 ### Mermaid diagrams
 A markdown-it fence override in `config.ts` turns ```` ```mermaid ```` blocks into `<Mermaid code-b64="...">`; `Mermaid.vue` renders client-side in `onMounted` (theme-aware, re-renders on dark-mode toggle). There is no vitepress mermaid plugin; diagram sources live inline in the markdown pages.
 
-### Bitcoin REST endpoints (CORS handling)
-`useDidBtcr2.ts#createApiForNetwork` configures the api's Esplora REST host per network:
-- **Dev**: routes through Vite dev-server proxies declared in `config.ts` (`/mempool` to `mempool.space`, `/mutinynet` to `mutinynet.com`) to avoid CORS.
-- **Prod**: uses the library defaults (`mempool.space`, `mutinynet.com`) directly; `regtest` defaults to localhost.
+### Bitcoin REST endpoints
+The demos call the library's default Esplora hosts (`mempool.space`, `mutinynet.com`; `regtest` defaults to localhost) directly from the browser. Both public hosts send `Access-Control-Allow-Origin: *`, so there are no proxies and no `fetch` monkey-patching. Constraints: requests must remain header-free "simple requests" (mempool.space 404s on OPTIONS preflight), and mempool.space rate-limits. No env-var config; the `@did-btcr2` packages take explicit config objects only (`createApi({ btc: { network, rest, rpc, executor } })`).
 
-There is no `fetch` monkey-patching and no env-var config; the `@did-btcr2` packages take explicit config objects only (`createApi({ btc: { network, rest, rpc, executor } })`).
+### Deployment
+btcr2.dev is served from a separate VM with **no connection to this repo**: no CI/CD, no automation. Deploys happen by filing an issue on an internal company GitLab project, fulfilled manually by third-party IT. The GitHub Actions workflow in `.github/workflows/ci.yml` only verifies typecheck+build (weekly cron catches upstream `@did-btcr2` breakage, since no lockfile is committed); it does not and cannot deploy.
 
 ### Vite resolve settings
 `config.ts` sets `resolve.conditions: ['browser']` (so the `@did-btcr2/*` prebuilt browser bundles are picked up during SSR/build) and `resolve.dedupe: ['vue']`. Keep these when adding packages with Node-vs-browser conditional exports.

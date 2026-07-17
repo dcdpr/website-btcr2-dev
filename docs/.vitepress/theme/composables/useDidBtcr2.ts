@@ -45,18 +45,6 @@ function loadModules(): Promise<Btcr2Modules> {
   return promise;
 }
 
-// In dev, route the library's Esplora REST hosts through the Vite proxy
-// entries declared in config.ts (server.proxy) to sidestep CORS. In
-// production the library defaults (mempool.space / mutinynet.com) are used
-// directly. regtest keeps its localhost default in both modes.
-const DEV_REST_HOSTS: Partial<Record<NetworkName, string>> = {
-  bitcoin: '/mempool/api',
-  testnet3: '/mempool/testnet/api',
-  testnet4: '/mempool/testnet4/api',
-  signet: '/mempool/signet/api',
-  mutinynet: '/mutinynet/api',
-};
-
 export type UseDidBtcr2 = {
   ready: Ref<boolean>;
   error: Ref<unknown>;
@@ -90,14 +78,16 @@ export function useDidBtcr2(): UseDidBtcr2 {
     /* surfaced via error ref */
   });
 
+  // The library's default Esplora hosts (mempool.space / mutinynet.com) both
+  // send `Access-Control-Allow-Origin: *`, so the browser calls them directly
+  // in dev and prod alike; no proxy needed. Two constraints to preserve:
+  // requests must stay header-free "simple requests" (mempool.space's OPTIONS
+  // handler 404s on preflight), and mempool.space rate-limits (429s).
   function createApiForNetwork(network: NetworkName): DidBtcr2Api {
     if (!modules.value) {
       throw new Error('@did-btcr2 modules not loaded yet - await load() first');
     }
-    const host = import.meta.env.DEV ? DEV_REST_HOSTS[network] : undefined;
-    return modules.value.api.createApi({
-      btc: host ? { network, rest: { host } } : { network },
-    });
+    return modules.value.api.createApi({ btc: { network } });
   }
 
   return { ready, error, load, modules, createApiForNetwork };

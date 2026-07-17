@@ -7,11 +7,9 @@ import DemoResolve from './demos/Resolve.vue';
 import DemoUpdate from './demos/Update.vue';
 import './custom.css';
 
-// CORS handling for the Bitcoin REST endpoints lives in
-// composables/useDidBtcr2.ts (createApiForNetwork): in dev the api is
-// configured with the /mempool and /mutinynet Vite proxy paths from
-// config.ts; in production the library's default hosts are used directly.
-// No fetch patching.
+// Bitcoin REST endpoints are called directly (mempool.space and
+// mutinynet.com both send Access-Control-Allow-Origin: *); see
+// composables/useDidBtcr2.ts. No proxies, no fetch patching.
 
 const theme: Theme = {
   extends: DefaultTheme,

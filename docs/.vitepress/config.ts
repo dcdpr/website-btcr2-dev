@@ -29,20 +29,6 @@ export default defineConfig({
     },
   },
   vite: {
-    server: {
-      proxy: {
-        '/mempool': {
-          target: 'https://mempool.space',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/mempool/, ''),
-        },
-        '/mutinynet': {
-          target: 'https://mutinynet.com',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/mutinynet/, ''),
-        },
-      },
-    },
     resolve: {
       conditions: ['browser'],
       dedupe: ['vue'],
