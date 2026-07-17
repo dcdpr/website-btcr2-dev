@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
 import { useDidBtcr2 } from '../composables/useDidBtcr2';
 import './demo-fields.css';
 
-const networks = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'] as const;
-type Network = (typeof networks)[number];
+const networks: readonly NetworkName[] = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'];
+type Network = NetworkName;
 
-const { ready, modules } = useDidBtcr2();
+const { ready, modules, createApiForNetwork } = useDidBtcr2();
 
 const did = ref('');
 const selectedNetwork = ref<Network | ''>('');
@@ -66,13 +67,13 @@ async function run() {
   running.value = true;
   response.value = null;
   const net = (selectedNetwork.value || inferredNetwork.value) as Network;
-  const api = modules.value.api.createApi({ btc: { network: net as never } });
+  const api = createApiForNetwork(net);
   try {
     const opts =
       isExternal.value && sidecarText.value.trim()
         ? { sidecar: JSON.parse(sidecarText.value) }
         : undefined;
-    response.value = await api.resolveDid(did.value, opts as never);
+    response.value = await api.resolveDid(did.value, opts);
   } catch (err: unknown) {
     response.value = err instanceof Error ? err.stack || err.message : String(err);
   } finally {

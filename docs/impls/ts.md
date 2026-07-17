@@ -1,29 +1,31 @@
 # TypeScript
 
 The TypeScript reference implementation lives in the
-[`did-btcr2-js` monorepo](https://github.com/dcdpr/did-btcr2-js). Three packages
-are relevant here:
+[`did-btcr2-js` monorepo](https://github.com/dcdpr/did-btcr2-js). The packages
+most relevant to consumers:
 
-| Package | Purpose | npm |
-|---|---|---|
-| [`@did-btcr2/method`](https://www.npmjs.com/package/@did-btcr2/method) | Sans-I/O reference implementation of the DID Method (Create / Resolve / Update state machines). | ✅ |
-| [`@did-btcr2/api`](https://www.npmjs.com/package/@did-btcr2/api) | High-level SDK facade with Bitcoin connection, KMS and CAS wiring. | ✅ |
-| [`@did-btcr2/cli`](https://github.com/dcdpr/did-btcr2-js/tree/main/packages/cli) | Command-line interface. | ⏳ not yet published |
+| Package | Purpose |
+|---|---|
+| [`@did-btcr2/method`](https://www.npmjs.com/package/@did-btcr2/method) | Sans-I/O reference implementation of the DID Method (Create / Resolve / Update state machines). |
+| [`@did-btcr2/api`](https://www.npmjs.com/package/@did-btcr2/api) | High-level SDK facade with Bitcoin connection, KMS and CAS wiring. |
+| [`@did-btcr2/keypair`](https://www.npmjs.com/package/@did-btcr2/keypair) | Schnorr/secp256k1 key pairs, Multikey encoding, and the `Signer` interface (`LocalSigner`). |
+| [`@did-btcr2/common`](https://www.npmjs.com/package/@did-btcr2/common) | Shared types plus canonicalization/hash utilities (`canonicalHashBytes`). |
+| [`@did-btcr2/aggregation`](https://www.npmjs.com/package/@did-btcr2/aggregation) | Aggregated-beacon protocol with Nostr and HTTP/REST transports. |
+| [`@did-btcr2/cli`](https://www.npmjs.com/package/@did-btcr2/cli) | Command-line interface. |
 
-> **Status** — Both `@did-btcr2/method` and `@did-btcr2/api` are pre-1.0. APIs
-> may change before stabilization.
+> **Status**: all packages are pre-1.0. APIs may change before stabilization.
 
 ## Install
 
 ```sh
-pnpm add @did-btcr2/api @did-btcr2/method
+pnpm add @did-btcr2/api @did-btcr2/keypair @did-btcr2/common
 ```
 
-`@did-btcr2/method` ships browser builds with WASM and top-level await. In
-bundlers (Vite, Webpack, esbuild) you typically need:
-
-* `vite-plugin-wasm` + `vite-plugin-top-level-await` (Vite/Vitepress)
-* `resolve.conditions: ['browser']` so the browser build is picked up
+The packages are pure JavaScript (no WASM) and target both Node.js ≥ 22 and
+modern browsers. Each ships a prebuilt browser bundle selected via the
+`browser` condition in `exports`; in Vite set
+`resolve.conditions: ['browser']` if your build resolves with Node conditions
+(e.g. VitePress SSR).
 
 ## Quickstart
 
@@ -47,8 +49,9 @@ api.dispose();
 
 `did:btcr2` identifiers can be created entirely offline. Two modes:
 
-* **`deterministic`** — encode a compressed secp256k1 public key.
-* **`external`** — encode the bytes of an intermediate DID document.
+* **`deterministic`**: encode a compressed secp256k1 public key.
+* **`external`**: encode the SHA-256 hash of the canonicalized intermediate
+  DID document (`canonicalHashBytes` from `@did-btcr2/common`).
 
 ::: code-group
 <<< @/examples/ts/create-key.ts [Deterministic (k1)]
@@ -65,9 +68,11 @@ beacon signals are fetched for you.
 
 ## Update
 
-Updates are JSON Patches applied to the current DID document. The library
-signs the update with the verification method you nominate and broadcasts it
-through the chosen beacon.
+Updates are JSON Patches applied to the current DID document. You supply a
+`Signer` (e.g. `LocalSigner` from `@did-btcr2/keypair`, or a KMS-backed
+signer); the library signs the update with the verification method you
+nominate and broadcasts it through the chosen beacon. The result contains the
+signed update, the signal `txid`, and any per-beacon sidecar artifacts.
 
 <<< @/examples/ts/update.ts
 

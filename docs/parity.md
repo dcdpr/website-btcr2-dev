@@ -38,7 +38,7 @@ today. Use it to pick an implementation that fits your stack.
 | Pure sans-I/O state machines | ✅ | n/a | 🚧 | 🚧 |
 | Pluggable KMS | ✅ | ⚠️ | 🚧 | 🚧 |
 | Pluggable CAS executor | ✅ | ⚠️ | 🚧 | 🚧 |
-| Browser-runnable (WASM) | ✅ | n/a | n/a | 🚧 |
+| Browser-runnable (pure JS, no WASM) | ✅ | n/a | n/a | 🚧 |
 | Universal Resolver driver | n/a | ✅ | n/a | n/a |
 | Universal Registrar driver | n/a | ✅ | n/a | n/a |
 

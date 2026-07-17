@@ -23,9 +23,9 @@
     "vue-tsc": "^2.1.10"
   },
   "dependencies": {
-    "@did-btcr2/api": "^0.5.0",
-    "@did-btcr2/method": "^0.29.0",
-    "@noble/secp256k1": "^3.0.0",
+    "@did-btcr2/api": "^0.17.0",
+    "@did-btcr2/common": "^9.1.0",
+    "@did-btcr2/keypair": "^0.13.1",
     "highlight.js": "^11.11.1"
   }
 }

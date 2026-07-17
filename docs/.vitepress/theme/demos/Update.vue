@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
 import { useDidBtcr2 } from '../composables/useDidBtcr2';
+import { hexToBytes, isHex } from './hex';
 import './demo-fields.css';
 
-const networks = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'] as const;
-type Network = (typeof networks)[number];
+const networks: readonly NetworkName[] = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'];
+type Network = NetworkName;
 
 const props = withDefaults(
   defineProps<{
@@ -15,7 +17,7 @@ const props = withDefaults(
   { op: 'update' },
 );
 
-const { ready, modules } = useDidBtcr2();
+const { ready, modules, createApiForNetwork } = useDidBtcr2();
 
 const did = ref('');
 const selectedNetwork = ref<Network>('regtest');
@@ -47,13 +49,18 @@ watch(patchesText, () => {
   }
 });
 
+const isSigningKeyValid = computed(() => {
+  const h = signingMaterialHex.value.trim();
+  return isHex(h) && h.length === 64;
+});
+
 const canRun = computed(
   () =>
     did.value.startsWith('did:btcr2:') &&
     !patchesError.value &&
     !!verificationMethodId.value &&
     !!beaconId.value &&
-    !!signingMaterialHex.value,
+    isSigningKeyValid.value,
 );
 
 const fullVerificationMethodId = computed(() =>
@@ -68,38 +75,41 @@ const fullBeaconId = computed(() =>
 const snippet = computed(() => {
   const patchesPretty = patchesText.value.trim() || '[]';
   return `import { createApi } from '@did-btcr2/api';
+import { LocalSigner } from '@did-btcr2/keypair';
 
 const api = createApi({ btc: { network: '${selectedNetwork.value}' } });
-const signed = await api.updateDid({
+const signer = new LocalSigner(hexToBytes('<32-byte-secret-key-hex>'));
+const result = await api.updateDid({
   did: '${did.value || '<did>'}',
   patches: ${patchesPretty},
   sourceVersionId: ${sourceVersionId.value},
   verificationMethodId: '${fullVerificationMethodId.value}',
   beaconId: '${fullBeaconId.value}',
-  // signingMaterial is sourced from the configured KMS by default; pass
-  // explicit bytes here only if you're not using a KMS.
+  signer,
 });
-console.log(signed);`;
+// result: { signedUpdate, txid, announcement?, proof?, publishedToCas }
+console.log(result);`;
 });
 
 async function run() {
   if (!modules.value || !canRun.value) return;
   running.value = true;
   response.value = null;
-  const api = modules.value.api.createApi({ btc: { network: selectedNetwork.value as never } });
+  const api = createApiForNetwork(selectedNetwork.value);
   try {
     const patches = JSON.parse(patchesText.value);
-    const signed = await api.updateDid({
+    const signer = new modules.value.keypair.LocalSigner(
+      hexToBytes(signingMaterialHex.value),
+    );
+    const result = await api.updateDid({
       did: did.value,
       patches,
       sourceVersionId: sourceVersionId.value,
       verificationMethodId: fullVerificationMethodId.value,
       beaconId: fullBeaconId.value,
-      // The api type accepts signingMaterial via the underlying method facade;
-      // here we don't yet expose it directly on updateDid, so anything beyond
-      // a configured KMS will surface as an error in `response`.
-    } as never);
-    response.value = signed;
+      signer,
+    });
+    response.value = result;
   } catch (err: unknown) {
     response.value = err instanceof Error ? err.stack || err.message : String(err);
   } finally {
@@ -166,13 +176,16 @@ async function run() {
     </div>
 
     <div class="demo-field">
-      <span class="demo-label">Signing key bytes (hex, your responsibility — never use a real key here)</span>
+      <span class="demo-label">Signing secret key (hex, 32 bytes; never use a real key here)</span>
       <input
         class="demo-input"
         v-model.trim="signingMaterialHex"
         placeholder="64-char hex"
         spellcheck="false"
       />
+      <p v-if="signingMaterialHex && !isSigningKeyValid" class="demo-warn">
+        Must be 64 hex chars (a 32-byte secret key).
+      </p>
       <p class="demo-warn">
         ⚠️ This demo executes against the live network configured above. Use test-network keys only.
       </p>

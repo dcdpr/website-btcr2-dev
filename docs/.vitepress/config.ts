@@ -36,6 +36,11 @@ export default defineConfig({
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/mempool/, ''),
         },
+        '/mutinynet': {
+          target: 'https://mutinynet.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/mutinynet/, ''),
+        },
       },
     },
     resolve: {

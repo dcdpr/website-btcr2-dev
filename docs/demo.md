@@ -1,8 +1,9 @@
 # Demo
 
 The DID Method specification covers four CRUD operations. The widgets on this page
-exercise the **TypeScript** reference implementation (`@did-btcr2/api`,
-`@did-btcr2/method`) directly in your browser via dynamic imports.
+exercise the **TypeScript** reference implementation (`@did-btcr2/api`, backed by
+`@did-btcr2/method`, `@did-btcr2/keypair`, and `@did-btcr2/common`) directly in
+your browser via dynamic imports.
 
 * [Create](#create) — produce a new `did:btcr2` identifier from a public key or an intermediate DID document.
 * [Resolve](#resolve) — resolve an identifier using Bitcoin beacon signals and optional sidecar data.
@@ -22,6 +23,7 @@ needed. The Create operation accepts either:
 * **`EXTERNAL`** — an [intermediate DID document](https://dcdpr.github.io/did-btcr2/#def-intermediate-did-document)
   with every identifier replaced by the placeholder
   `did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
+  The identifier encodes the SHA-256 hash of the canonicalized document.
 
 Supported networks: `bitcoin`, `testnet3`, `testnet4`, `signet`, `mutinynet`, `regtest`.
 
@@ -42,7 +44,8 @@ initial document, signed updates, CAS announcements and/or SMT proofs.
 Updates are applied as [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902)
 documents. `api.updateDid(...)` resolves the current state (unless you provide
 `sourceDocument` + `sourceVersionId`), applies your patches, signs the result
-with the verification method you select, and broadcasts via the chosen beacon.
+with the verification method and signing key you supply, and broadcasts via the
+chosen beacon. The response includes the signed update and the signal `txid`.
 
 <DemoUpdate />
 

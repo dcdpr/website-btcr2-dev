@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import * as secp from '@noble/secp256k1';
+import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
 import { useDidBtcr2 } from '../composables/useDidBtcr2';
+import { bytesToHex, hexToBytes, isHex } from './hex';
 import './demo-fields.css';
 
-const networks = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'] as const;
-type Network = (typeof networks)[number];
+const networks: readonly NetworkName[] = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'];
+type Network = NetworkName;
 
-const { ready, modules } = useDidBtcr2();
+const { ready, modules, createApiForNetwork } = useDidBtcr2();
 
 const selectedNetwork = ref<Network | ''>('');
 const idType = ref<'KEY' | 'EXTERNAL' | ''>('');
@@ -20,28 +21,10 @@ const running = ref(false);
 const response = ref<unknown>(null);
 const initialDocument = ref<unknown>(null);
 
-const hexRe = /^[0-9a-fA-F]+$/;
-
-function hexToBytes(hex: string): Uint8Array {
-  const clean = hex.trim();
-  if (!hexRe.test(clean) || clean.length % 2 !== 0) {
-    throw new Error('Invalid hex');
-  }
-  const out = new Uint8Array(clean.length / 2);
-  for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
-  return out;
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 const isKeyValid = computed(() => {
   if (idType.value !== 'KEY') return false;
   const h = pubKeyHex.value.trim();
-  if (!h || !hexRe.test(h) || h.length !== 66) return false;
+  if (!h || !isHex(h) || h.length !== 66) return false;
   const prefix = h.slice(0, 2);
   return prefix === '02' || prefix === '03';
 });
@@ -81,11 +64,13 @@ console.log(did);`;
   }
   if (idType.value === 'EXTERNAL') {
     return `import { createApi } from '@did-btcr2/api';
+import { canonicalHashBytes } from '@did-btcr2/common';
 
 const api = createApi({ btc: { network: '${net}' } });
 const intermediateDocument = ${intermediateDocText.value.trim() || '{ /* intermediate DID doc */ }'};
-const genesisBytes = new TextEncoder().encode(JSON.stringify(intermediateDocument));
-const did = api.createDid('external', genesisBytes, { network: '${net}' });
+// EXTERNAL identifiers encode the SHA-256 hash of the canonicalized document.
+const genesisHash = canonicalHashBytes(intermediateDocument);
+const did = api.createDid('external', genesisHash, { network: '${net}' });
 console.log(did);`;
   }
   return '// Choose network and idType, then fill the fields to see the call';
@@ -95,10 +80,9 @@ async function randomize() {
   if (!modules.value) return;
   selectedNetwork.value = networks[Math.floor(Math.random() * networks.length)];
   idType.value = Math.random() < 0.5 ? 'KEY' : 'EXTERNAL';
-  const sec = secp.utils.randomSecretKey();
-  const pub = secp.getPublicKey(sec, true);
+  const keys = modules.value.keypair.SchnorrKeyPair.generate();
   if (idType.value === 'KEY') {
-    pubKeyHex.value = bytesToHex(pub);
+    pubKeyHex.value = bytesToHex(keys.publicKey.compressed);
     intermediateDocText.value = '';
   } else {
     pubKeyHex.value = '';
@@ -116,7 +100,8 @@ async function randomize() {
             id: `${PLACEHOLDER}#key-0`,
             type: 'Multikey',
             controller: PLACEHOLDER,
-            publicKeyMultibase: bytesToHex(pub),
+            // Multikey requires a base58btc multibase string (zQ3s… prefix).
+            publicKeyMultibase: keys.publicKey.encode(),
           },
         ],
         authentication: [`${PLACEHOLDER}#key-0`],
@@ -136,21 +121,18 @@ async function run() {
   response.value = null;
   initialDocument.value = null;
   try {
-    const api = modules.value.api.createApi({
-      btc: { network: selectedNetwork.value as never },
-    });
+    const network = selectedNetwork.value as Network;
+    const api = createApiForNetwork(network);
     try {
       if (idType.value === 'KEY') {
-        const did = api.createDid('deterministic', hexToBytes(pubKeyHex.value), {
-          network: selectedNetwork.value as never,
-        });
+        const did = api.createDid('deterministic', hexToBytes(pubKeyHex.value), { network });
         response.value = { did };
       } else {
         const doc = JSON.parse(intermediateDocText.value);
-        const bytes = new TextEncoder().encode(JSON.stringify(doc));
-        const did = api.createDid('external', bytes, {
-          network: selectedNetwork.value as never,
-        });
+        // EXTERNAL identifiers encode the 32-byte hash of the canonicalized
+        // document, not the raw document bytes.
+        const genesisHash = modules.value.common.canonicalHashBytes(doc);
+        const did = api.createDid('external', genesisHash, { network });
         response.value = { did };
         initialDocument.value = substitutePlaceholder(doc, did);
       }

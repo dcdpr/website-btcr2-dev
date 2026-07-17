@@ -1,6 +1,7 @@
 // Create a `did:btcr2:x1…` identifier from an intermediate DID document.
 // The placeholder ID is replaced throughout the document by the encoded DID.
 import { createApi } from '@did-btcr2/api';
+import { canonicalHashBytes } from '@did-btcr2/common';
 
 const api = createApi({ btc: { network: 'regtest' } });
 
@@ -25,8 +26,9 @@ const intermediateDocument = {
   capabilityDelegation: [`${PLACEHOLDER}#key-0`],
 };
 
-const genesisBytes = new TextEncoder().encode(JSON.stringify(intermediateDocument));
-const did = api.createDid('external', genesisBytes, { network: 'regtest' });
+// EXTERNAL identifiers encode the SHA-256 hash of the canonicalized document.
+const genesisHash = canonicalHashBytes(intermediateDocument);
+const did = api.createDid('external', genesisHash, { network: 'regtest' });
 
 console.log({ did });
 

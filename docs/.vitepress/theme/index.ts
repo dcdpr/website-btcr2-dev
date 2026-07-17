@@ -1,4 +1,5 @@
 import DefaultTheme from 'vitepress/theme';
+import type { Theme } from 'vitepress';
 import DemoCard from './components/DemoCard.vue';
 import Mermaid from './components/Mermaid.vue';
 import DemoCreate from './demos/Create.vue';
@@ -6,23 +7,11 @@ import DemoResolve from './demos/Resolve.vue';
 import DemoUpdate from './demos/Update.vue';
 import './custom.css';
 
-// Dev-only CORS workaround: route mempool.space/.holdings through the Vite proxy.
-// Gated on import.meta.env.DEV because the /mempool proxy only exists in the dev
-// server — applying this rewrite in production would 404 against the deployed origin.
-if (import.meta.env.DEV && typeof globalThis.fetch === 'function') {
-  const MEMPOOL_RX = /^https?:\/\/(mempool\.space|mempool\.holdings)\b/i;
-  const originalFetch = globalThis.fetch.bind(globalThis);
-  globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : (input as URL).toString();
-    if (MEMPOOL_RX.test(url)) {
-      const proxied = url.replace(MEMPOOL_RX, '/mempool');
-      return originalFetch(proxied, init);
-    }
-    return originalFetch(input as RequestInfo, init);
-  };
-}
-
-import type { Theme } from 'vitepress';
+// CORS handling for the Bitcoin REST endpoints lives in
+// composables/useDidBtcr2.ts (createApiForNetwork): in dev the api is
+// configured with the /mempool and /mutinynet Vite proxy paths from
+// config.ts; in production the library's default hosts are used directly.
+// No fetch patching.
 
 const theme: Theme = {
   extends: DefaultTheme,
