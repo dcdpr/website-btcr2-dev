@@ -65,6 +65,106 @@ flowchart LR
   Deactivate --> Update
 ```
 
+## Protocol Stack
+
+The protocol stack diagram groups the moving parts of did:btcr2 into layers, from end-user
+applications down to the Bitcoin ledger.
+
+```mermaid
+---
+title: DID BTCR2 Protocol Stack
+---
+
+graph TB
+  %% ---------- Styles ----------
+  classDef layer fill:#f7f7fb
+  classDef comp fill:#ffffff,stroke:#c7cdd1,rx:6,ry:6,color:#202124
+
+  %% ---------- Layers ----------
+  subgraph L6[Application / Use Layer]
+    direction TB
+    Wallets[Identity Wallets]:::comp
+    VCVerify[VC / Signature Verification]:::comp
+  end
+
+  subgraph L5[DID Resolution & API Layer]
+    direction TB
+    Resolver[BTCR2 Resolver<br/>Traverse History<br>Apply patches<br>Update DID Document]:::comp
+    JSONLD[JSON-LD<br/>Processing]:::comp
+    DIDCore[DID Core<br/>Compliance]:::comp
+    APIs[Resolver APIs]:::comp
+  end
+
+  subgraph L4[Data Integrity & Proof Layer]
+    direction TB
+    KeyMgr[Key<br/>Manager]:::comp
+    BIP340Crypto[BIP340<br/>Cryptosuite]:::comp
+    BIP340Multikey[BIP340<br/>Multikey]:::comp
+    BIP340DIPCrypto[BIP340<br/>Proofs]:::comp
+    MuSig[MuSig2<br/>Aggregation]:::comp
+  end
+
+  subgraph L3[DID Document State Layer]
+    direction TB
+    Patches[JSON Patch]:::comp
+    Model[BTCR2 DID Document]:::comp
+    InterDoc[Intermediate<br/>DID documents]:::comp
+    Rules[Resolution Rules<br/>& Versioning]:::comp
+  end
+
+  subgraph L2[Beacon Layer]
+    direction TB
+    Ops[BTCR2 Update]:::comp
+    Anchors[BTCR2 Beacon Signals<br/>commitments to state/patches]:::comp
+    Beacon[SingletonBeacon<br/>MapBeacon<br/>SMTBeacon]:::comp
+    Linkage[Tx hash linkage & verification]:::comp
+  end
+
+  subgraph L1[Bitcoin Ledger Layer]
+    direction TB
+    BTC[Bitcoin tx on main/test/reg networks]:::comp
+    OPRET[OP_RETURN CID Embedding]:::comp
+    OPRET[SMT Proof Aggregation]:::comp
+    PSBT["PSBT"]:::comp
+    Finality[Consensus, confirmations, finality]:::comp
+  end
+
+  %% ---------- Layer connections ----------
+  L6 --> L5 --> L4 --> L3 --> L2 --> L1
+
+  %% Optional: show a typical data flow up & down (comment out if noisy)
+  %% Resolver ==> uses proofs/state anchored on chain
+  Resolver -.reads/applies.-> Patches
+  Resolver -.reads.-> Anchors
+  Anchors -.on-chain.-> BTC
+
+  %% ---------- Apply layer framing ----------
+  class L1,L2,L3,L4,L5,L6 layer
+```
+
+## DID Document Lifecycle
+
+The state diagram below tracks a DID document from creation through resolution, updates,
+and its final target state.
+
+```mermaid
+stateDiagram-v2
+    state "Initial Document" as Initial
+    state "Intermediate Document" as Intermediate
+    state "Target Document" as Target
+    state "Contemporary Document v1" as ContemporaryV1
+    state "Contemporary Document V2" as ContemporaryV2
+
+    [*] --> Initial: Create From<br>Deterministic Key Pair
+    [*] --> Intermediate: Create From<br>External DID Document
+    Intermediate --> Initial: Replace placeholder DID
+    Initial --> ContemporaryV1: Resolve
+    %% Stack of versioned state contemp docs
+    ContemporaryV1 --> ContemporaryV2: Traverse<br>Bitcoin Blockchain
+    ContemporaryV2 --> Target: 
+    Target --> [*]
+```
+
 ## Data Flow
 
 The below data flowcharts map the high-level algorithm calls made for each of the CRUD Operations in the specification.

@@ -1,0 +1,52 @@
+%% Look into legend for solid vs. dotted lines
+%% Keep this diagram but rethink how it is organized
+%% Something more circular (maybe??) representing interactions between actors and object
+%% e.g. https://stats.stackexchange.com/questions/3158/what-is-this-type-of-circular-link-visualization-called
+%% - which beacon service type (singleton, Map, SMT)
+    %% - which data delivery (CID, sidecar)
+    %% - is resolver a separate service?  (could be lower or higher trust) 
+
+flowchart LR
+    subgraph Controllers
+      Stuart["Stuart (DID Controller)"]
+      Others["Other (DID Controller)"]
+    end
+
+
+    subgraph Aggregation
+      BA[Beacon Aggregator]
+      Cohort[Beacon Cohort]
+    end
+
+    subgraph Networks
+      BTCRead[Read Bitcoin Network]
+      BTCWrite[Write Bitcoin Network]
+      CAS[CAS IPFS 📦]
+    end
+
+    subgraph Verification
+      Satoshi["Satoshi (Verifier)"]
+      Resolver[Resolver]
+    end
+
+    %% Control/Enrollment
+    Stuart --> Beacon_Services
+    Stuart --> BA
+    Others --> BA
+
+    %% Signal creation/broadcast
+    Beacon_Services -- OP_RETURN --> BTCWrite
+    BA -- Builds & sign Beacon Signals --> Cohort
+    Cohort -- PSBTs → aggregate → OP_RETURN --> BTCWrite
+
+    %% Side-channel data publication
+    Stuart -. optional publish .-> CAS
+    BA -. publish map & updates .-> CAS
+    Stuart -. share updates/proofs .-> Resolver
+
+    %% Resolution & verification
+    Resolver -- get beacon signals --> BTCRead
+    Resolver -. get docs by hash .-> CAS
+
+    %% Document reconstruction checks
+    Resolver -->|Process Signals| Satoshi
