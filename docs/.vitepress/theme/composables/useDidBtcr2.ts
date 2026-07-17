@@ -45,6 +45,20 @@ function loadModules(): Promise<Btcr2Modules> {
   return promise;
 }
 
+// mempool.space networks MUST go through the site's same-origin /mempool
+// proxy (Vite dev proxy in dev, the VM's nginx `location /mempool/` block in
+// prod). Direct browser calls fail CORS: the @did-btcr2/bitcoin REST client
+// sends `Content-Type: application/json` on GETs, which triggers a preflight
+// that mempool.space's OPTIONS handler rejects (404). mutinynet.com handles
+// preflight correctly (ACAO:* + OPTIONS 204) so it stays direct; regtest
+// keeps the library's localhost default.
+const MEMPOOL_REST_HOSTS: Partial<Record<NetworkName, string>> = {
+  bitcoin: '/mempool/api',
+  testnet3: '/mempool/testnet/api',
+  testnet4: '/mempool/testnet4/api',
+  signet: '/mempool/signet/api',
+};
+
 export type UseDidBtcr2 = {
   ready: Ref<boolean>;
   error: Ref<unknown>;
@@ -78,16 +92,14 @@ export function useDidBtcr2(): UseDidBtcr2 {
     /* surfaced via error ref */
   });
 
-  // The library's default Esplora hosts (mempool.space / mutinynet.com) both
-  // send `Access-Control-Allow-Origin: *`, so the browser calls them directly
-  // in dev and prod alike; no proxy needed. Two constraints to preserve:
-  // requests must stay header-free "simple requests" (mempool.space's OPTIONS
-  // handler 404s on preflight), and mempool.space rate-limits (429s).
   function createApiForNetwork(network: NetworkName): DidBtcr2Api {
     if (!modules.value) {
       throw new Error('@did-btcr2 modules not loaded yet - await load() first');
     }
-    return modules.value.api.createApi({ btc: { network } });
+    const host = MEMPOOL_REST_HOSTS[network];
+    return modules.value.api.createApi({
+      btc: host ? { network, rest: { host } } : { network },
+    });
   }
 
   return { ready, error, load, modules, createApiForNetwork };

@@ -29,6 +29,20 @@ export default defineConfig({
     },
   },
   vite: {
+    server: {
+      // Dev-server twin of the production nginx `location /mempool/` block
+      // (see rpm/ and CLAUDE.md). Same-origin proxying is REQUIRED for
+      // mempool.space: the @did-btcr2/bitcoin REST client sends
+      // `Content-Type: application/json` on GETs, which triggers a CORS
+      // preflight that mempool.space's OPTIONS handler rejects (404).
+      proxy: {
+        '/mempool': {
+          target: 'https://mempool.space',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/mempool/, ''),
+        },
+      },
+    },
     resolve: {
       conditions: ['browser'],
       dedupe: ['vue'],

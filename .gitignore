@@ -49,3 +49,6 @@ release/
 # VitePress output folders
 dist/
 cache/
+
+### Astro (branch residue) ###
+.astro/

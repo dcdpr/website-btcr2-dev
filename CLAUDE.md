@@ -36,11 +36,15 @@ There is no test or lint script. Run `pnpm typecheck && pnpm build` before commi
 ### Mermaid diagrams
 A markdown-it fence override in `config.ts` turns ```` ```mermaid ```` blocks into `<Mermaid code-b64="...">`; `Mermaid.vue` renders client-side in `onMounted` (theme-aware, re-renders on dark-mode toggle). There is no vitepress mermaid plugin; diagram sources live inline in the markdown pages.
 
-### Bitcoin REST endpoints
-The demos call the library's default Esplora hosts (`mempool.space`, `mutinynet.com`; `regtest` defaults to localhost) directly from the browser. Both public hosts send `Access-Control-Allow-Origin: *`, so there are no proxies and no `fetch` monkey-patching. Constraints: requests must remain header-free "simple requests" (mempool.space 404s on OPTIONS preflight), and mempool.space rate-limits. No env-var config; the `@did-btcr2` packages take explicit config objects only (`createApi({ btc: { network, rest, rpc, executor } })`).
+### Bitcoin REST endpoints (same-origin /mempool proxy is REQUIRED)
+mempool.space networks (`bitcoin`, `testnet3`, `testnet4`, `signet`) are routed through the site's **same-origin `/mempool` path** via `createApiForNetwork()` in `useDidBtcr2.ts`:
+- Dev: the Vite `server.proxy` block in `config.ts`.
+- Prod: the VM's nginx `location /mempool/ { proxy_pass https://mempool.space/; }` block (added via helpdesk issue #25; not in this repo).
+
+Direct browser calls to mempool.space FAIL: `@did-btcr2/bitcoin`'s REST client sends `Content-Type: application/json` on GETs, making them non-simple requests, and mempool.space's OPTIONS handler 404s the resulting preflight. Do not "simplify" this back to direct calls unless the upstream client stops sending that header. `mutinynet.com` handles preflight correctly and stays direct; `regtest` uses the library's localhost default. There is no `fetch` monkey-patching and no env-var config; the `@did-btcr2` packages take explicit config objects only (`createApi({ btc: { network, rest, rpc, executor } })`).
 
 ### Deployment
-btcr2.dev is served from a separate VM with **no connection to this repo**: no CI/CD, no automation. Deploys happen by filing an issue on an internal company GitLab project, fulfilled manually by third-party IT. The GitHub Actions workflow in `.github/workflows/ci.yml` only verifies typecheck+build (weekly cron catches upstream `@did-btcr2` breakage, since no lockfile is committed); it does not and cannot deploy.
+btcr2.dev is served from a company VM with **no automation**. Release flow: bump `Version:` in `rpm/btcr2-dev.spec` (+ changelog) and `package.json`, push to the GitLab upstream (`gl1.dcdpr.com:website/btcr2-dev.git`), tag `vX.Y.Z`, then file an issue on the internal helpdesk GitLab; third-party IT clones the GitLab repo at the tag, builds an RPM (`rpmbuild -ta`, spec runs `npm install && npm run build` and installs `docs/.vitepress/dist/*` to `/var/www/btcr2-dev`), and installs it. nginx serves the site and must keep the `/mempool` proxy block. The GitHub Actions workflow in `.github/workflows/ci.yml` only verifies typecheck+build (weekly cron catches upstream `@did-btcr2` breakage, since no lockfile is committed); it does not deploy.
 
 ### Vite resolve settings
 `config.ts` sets `resolve.conditions: ['browser']` (so the `@did-btcr2/*` prebuilt browser bundles are picked up during SSR/build) and `resolve.dedupe: ['vue']`. Keep these when adding packages with Node-vs-browser conditional exports.
