@@ -1,0 +1,57 @@
+/* Shared input / textarea / label styles for the CRUD demo forms. */
+
+.demo-row {
+  display: grid;
+  gap: 10px;
+  align-items: end;
+}
+
+@media (min-width: 640px) {
+  .demo-row.cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .demo-row.cols-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.demo-field {
+  display: grid;
+  gap: 6px;
+}
+
+.demo-label {
+  font-size: 12px;
+  color: var(--vp-c-text-2);
+}
+
+.demo-select,
+.demo-input,
+.demo-textarea {
+  background: transparent;
+  color: var(--vp-c-text-1);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.demo-select:focus,
+.demo-input:focus,
+.demo-textarea:focus {
+  outline: none;
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--vp-c-brand-1) 25%, transparent);
+}
+
+.demo-warn {
+  color: #ffb020;
+  font-size: 12px;
+}
+
+.demo-error {
+  color: #ff6b6b;
+  font-size: 12px;
+}

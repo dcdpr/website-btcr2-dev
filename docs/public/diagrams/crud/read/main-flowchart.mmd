@@ -1,9 +1,0 @@
----
-title: 7.2 Read
----
-
-flowchart TD
-    Start@{shape: circle, label: Read} --> IdentifierDecoding@{shape: subproc, label: Identifier Decoding}
-    IdentifierDecoding --> ResolveInitial@{shape: subproc, label: Resolve Initial DID Document}
-    ResolveInitial --> ResolveTarget@{shape: subproc, label: Resolve Target Document}
-    ResolveTarget --> Return@{shape: lean-l, label: Return targetDocument}

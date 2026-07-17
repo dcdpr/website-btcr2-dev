@@ -1,9 +1,0 @@
----
-title: 7.3.2 Invoke BTCR2 Update
----
-
-flowchart TD
-    Start@{shape: circle, label: Invoke<br>BTCR2 Update} --> DeriveZCap@{shape: subproc, label: Derive Root<br>Capability from<br>did:btcr2 Identifier}
-    DeriveZCap --> InstantiateCryptosuite@{shape: subproc, label: Instantiate<br>BIP340 Cryptosuite}
-    InstantiateCryptosuite --> AddProof@{shape: subproc, label: Add Proof to<br>btcr2Update}
-    AddProof --> Return@{shape: lean-l, label: Return btcr2Update}

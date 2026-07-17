@@ -15,7 +15,7 @@ Visit [btcr2.dev/impls](https://btcr2.dev/impls) to learn more about the differe
 
 ## Diagrams
 
-Visit [btcr2.dev/impls](https://btcr2.dev/impls) to learn more about the different implementations.
+Visit [btcr2.dev/diagrams](https://btcr2.dev/diagrams) for protocol and architecture diagrams.
 
 ## Features
 
@@ -28,7 +28,7 @@ Visit [btcr2.dev/impls](https://btcr2.dev/impls) to learn more about the differe
 * Non-Repudiation with Time Anchoring 🔏 - Every update is immutably timestamped
   using Bitcoin, preventing late publishing and enabling a cryptographic
   chain-of-custody suitable for high-stakes contracts.
-* Pairwise Non-Correlation 🔄 - Supports private, purpoDID Methodse-specific identifiers
+* Pairwise Non-Correlation 🔄 - Supports private, purpose-specific identifiers
   for each relationship or task, significantly reducing the risk of tracking or
   correlation across digital interactions.
 * Efficient & Scalable Updates ⚡ - DID creation is possible entirely off-chain

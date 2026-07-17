@@ -1,35 +1,45 @@
 # Rust
 
-TODO - content about the rust impl
+The Rust reference implementation lives at
+[`dcdpr/did-btcr2-rs`](https://github.com/dcdpr/did-btcr2-rs).
 
-## Source Code
-
-TODO - link to source code
-
-## Contributing
-
-TODO - instructions for FOSS contributions
+> **Status** — Experimental. The crate has not yet been published to crates.io.
+> See the [cross-impl parity matrix](/parity) for currently-supported CRUD operations.
 
 ## Install
 
-TODO - instructions for installation
+```toml
+# Cargo.toml
+[dependencies]
+did-btcr2 = { git = "https://github.com/dcdpr/did-btcr2-rs", branch = "main" }
+```
 
-## Usage
+## Create
 
-* TODO - content about usage; if possible, include runnable example code blocks
+```rust
+// TODO — pending stable Rust crate publication.
+// See https://github.com/dcdpr/did-btcr2-rs for the in-development API.
+```
 
-### Create
+## Resolve
 
-* TODO - usage examples for Create
+```rust
+// TODO
+```
 
-### Resolve
+## Update
 
-* TODO - usage examples for Resolve
+```rust
+// TODO
+```
 
-### Update
+## Deactivate
 
-* TODO - usage examples for Update
+```rust
+// TODO
+```
 
-### Deactivate
+## Contributing
 
-* TODO - usage examples for Deactivate
+Fork and clone <https://github.com/dcdpr/did-btcr2-rs>. Use the Rust toolchain
+declared in `rust-toolchain.toml`. Run `cargo test` before submitting a PR.

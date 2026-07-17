@@ -1,50 +1,55 @@
 # Demo
 
-DID Method specifications overload the term "CRUD" to describe how to interact
-with the key features of the method: Create, Resolve, Update, Deactivate.
-The below sections demo how to use each feature of DID Method BTCR2. 
+The DID Method specification covers four CRUD operations. The widgets on this page
+exercise the **TypeScript** reference implementation (`@did-btcr2/api`,
+`@did-btcr2/method`) directly in your browser via dynamic imports.
 
-* [Create](#create) - describes the process for creating a new did:btcr2 identifier (DID)
-  and a corresponding DID document from a public key or an existing DID document.
-* [Resolve](#resolve) - describes the process for resolving a specific did:btcr2 identifier
-  using data found in the Bitcoin blockchain.
-* [Update](#update) - describes the process for updating a DID document by commiting the
-  patch updates to the Bitcoin blockchain for later resolution.
-* [Deactivate](#deactivate) - describes the process for deactivating a DID and corresponding
-  DID document to discontinue usage.
+* [Create](#create) — produce a new `did:btcr2` identifier from a public key or an intermediate DID document.
+* [Resolve](#resolve) — resolve an identifier using Bitcoin beacon signals and optional sidecar data.
+* [Update](#update) — apply a JSON Patch to the DID document and announce it on-chain.
+* [Deactivate](#deactivate) — special-case Update that adds `{"deactivated": true}` to the DID document.
+
+> **Note** — these demos run client-side against the live Bitcoin network you select.
+> Use a test network (`regtest`, `signet`, `mutinynet`, `testnet3`, `testnet4`) for anything
+> that broadcasts a transaction, and never paste a real signing key.
 
 ## Create
 
-Creating a did:btcr2 identifier is entirely offline, requiring no innate network interactions
-or onchain anchoring transactions to generate a new identifier. Each creation starts either
-with a public key or a [Genesis Document](https://legreq.github.io/did-btcr2/#def-genesis-document).
-For public key creation, the `"idType"` arg is set to `"KEY"`. For
-[Genesis Document](https://legreq.github.io/did-btcr2/#def-genesis-document),
-creation, the `"idType"` is set to `"EXTERNAL".`
+Creating a `did:btcr2` identifier is fully off-chain — no network round-trip is
+needed. The Create operation accepts either:
 
-Public key creation must use a compressed secp256k1 public key that follows SEC encoding.
-[Genesis Document](https://legreq.github.io/did-btcr2/#def-genesis-document) creation
-must use an [intermediate DID document](https://legreq.github.io/did-btcr2/#def-intermediate-did-document)
-representation where the identifier has been replaced throughout by the placeholder value
-`did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
+* **`KEY` (deterministic)** — a compressed secp256k1 public key (33 bytes, SEC-encoded).
+* **`EXTERNAL`** — an [intermediate DID document](https://dcdpr.github.io/did-btcr2/#def-intermediate-did-document)
+  with every identifier replaced by the placeholder
+  `did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
 
-did:btcr2 identifiers are created in reference to some specific bitcoin blockchain network.
-Currently, the spec supports the following networks: bitcoin, testnet3, testnet4,
-signet, mutinynet and regtest.
+Supported networks: `bitcoin`, `testnet3`, `testnet4`, `signet`, `mutinynet`, `regtest`.
 
-<DidBtcr2DemoCreate />
+<DemoCreate />
 
 ## Resolve
 
-Resolving a did:btcr2 identifier can be done in multiple way. If the DID is deterministic
-and the DID document has not been updated since creation, resolution is deterministic.
+Resolution drives the [`Resolver`](https://dcdpr.github.io/did-btcr2/operations/resolve.html)
+state machine. The `@did-btcr2/api` facade injects the Bitcoin connection for
+the configured network so beacon signals can be fetched automatically. For
+`did:btcr2:x1…` identifiers you may also provide sidecar data containing the
+initial document, signed updates, CAS announcements and/or SMT proofs.
 
-<DidBtcr2DemoResolve />
+<DemoResolve />
 
 ## Update
 
-Coming Soon
+Updates are applied as [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902)
+documents. `api.updateDid(...)` resolves the current state (unless you provide
+`sourceDocument` + `sourceVersionId`), applies your patches, signs the result
+with the verification method you select, and broadcasts via the chosen beacon.
+
+<DemoUpdate />
 
 ## Deactivate
 
-Coming Soon
+Deactivation is an Update with the well-known patch
+`[{ "op": "add", "path": "/deactivated", "value": true }]`. The demo pre-fills
+that patch for you.
+
+<DemoUpdate op="deactivate" />

@@ -1,32 +1,65 @@
 # Java
 
-The Java implementation ... 
+The Java integration is delivered via the [DIF Universal Resolver](https://dev.uniresolver.io/)
+and [Universal Registrar](https://uniregistrar.io/) drivers maintained by Danube Tech.
 
-## GitHub Repos
+* [`uni-resolver-driver-did-btr2`](https://github.com/danubetech/uni-resolver-driver-did-btr2)
+* [`uni-registrar-driver-did-btr2`](https://github.com/danubetech/uni-registrar-driver-did-btr2)
 
-* [Universal Resolver Driver DID BTCR2](https://github.com/danubetech/uni-resolver-driver-did-btr2/tree/main)
-* [Universal Registrar Driver DID BTCR2](https://github.com/danubetech/uni-registrar-driver-did-btr2)
+> **Status** — Driver-only. There is no standalone Java SDK at this time;
+> JVM consumers should drive the operations via the Universal Resolver /
+> Registrar HTTP APIs.
 
-## Install & Config
+## Install
 
-TODO
+Both drivers are distributed as Docker images. Pull and run via
+`docker compose`; see the per-driver READMEs for compose snippets.
 
-## Usage
+## Create
 
-* TODO - embed code blocks and/or let users run code block and receive outputs
+```http
+POST https://uniregistrar.io/1.0/create?method=btcr2
+Content-Type: application/json
 
-### Create
+{
+  "didDocument": { ... },
+  "options": { "network": "regtest" }
+}
+```
 
-* TODO - usage examples for Create
+See [`uni-registrar-driver-did-btr2`](https://github.com/danubetech/uni-registrar-driver-did-btr2)
+for the supported request shape.
 
-### Resolve
+## Resolve
 
-* TODO - usage examples for Resolve
+```http
+GET https://dev.uniresolver.io/1.0/identifiers/did:btcr2:k1...
+Accept: application/did+ld+json
+```
 
-### Update
+## Update
 
-* TODO - usage examples for Update
+```http
+POST https://uniregistrar.io/1.0/update?method=btcr2
+Content-Type: application/json
 
-### Deactivate
+{
+  "did": "did:btcr2:k1...",
+  "didDocumentOperation": ["addToDidDocument"],
+  "didDocument": [ { ... } ]
+}
+```
 
-* TODO - usage examples for Deactivate
+## Deactivate
+
+```http
+POST https://uniregistrar.io/1.0/deactivate?method=btcr2
+Content-Type: application/json
+
+{ "did": "did:btcr2:k1..." }
+```
+
+## Contributing
+
+File issues against the appropriate driver repo. PRs are welcomed by the
+Danube Tech maintainers; see each repo's `CONTRIBUTING` document for details.

@@ -1,9 +1,0 @@
----
-title: 7.3 Update
----
-
-flowchart TD
-    Start@{shape: circle, label: Update} --> ConstructUpdate@{shape: subproc, label: Construct BTCR2 Update}
-    ConstructUpdate --> InvokeUpdate@{shape: subproc, label: Invoke BTCR2 Update}
-    InvokeUpdate --> AnnounceUpdate@{shape: subproc, label: Announce DID Update}
-    AnnounceUpdate --> End@{shape: lean-l, label: Return signalsMetadata}

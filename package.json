@@ -8,28 +8,23 @@
     "build": "vitepress build docs",
     "serve": "vitepress serve docs",
     "preview": "vitepress preview docs --port 8080",
+    "typecheck": "vue-tsc --noEmit -p docs/.vitepress/tsconfig.json",
     "clean": "rimraf node_modules pnpm-lock.yaml docs/.vitepress/cache docs/.vitepress/dist"
   },
   "keywords": [],
   "license": "MPL-2.0",
   "packageManager": "pnpm@10.16.1",
   "devDependencies": {
-    "@braintree/sanitize-url": "^7.1.1",
     "@types/node": "^24.5.0",
-    "cytoscape": "^3.33.1",
-    "cytoscape-cose-bilkent": "^4.1.0",
-    "dayjs": "^1.11.18",
-    "debug": "^4.4.3",
     "mermaid": "^11.11.0",
     "rimraf": "^6.0.1",
-    "vite-plugin-top-level-await": "^1.6.0",
-    "vite-plugin-wasm": "^3.5.0",
     "vitepress": "^1.6.4",
-    "vitepress-plugin-mermaid": "^2.0.17",
-    "vue": "^3.5.21"
+    "vue": "^3.5.21",
+    "vue-tsc": "^2.1.10"
   },
   "dependencies": {
-    "@did-btcr2/method": "^0.17.0",
+    "@did-btcr2/api": "^0.5.0",
+    "@did-btcr2/method": "^0.29.0",
     "@noble/secp256k1": "^3.0.0",
     "highlight.js": "^11.11.1"
   }

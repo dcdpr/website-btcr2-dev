@@ -38,43 +38,12 @@ option {
   max-width: 800px !important;
 }
 
-.mermaid {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mermaid p {
-  color: white;
-}
-
-.edgeLabel p {
-  background-color: var(--vp-c-brand-1) !important;
-}
-
-.mermaid .cluster rect {
-  fill: var(--vp-c-brand-2) !important;
-  stroke: var(--vp-c-brand-1) !important;
-  stroke-width: 1px !important;
-}
-
-.mermaid .node rect,
-.mermaid .node path,
-.mermaid .node polygon,
-.mermaid .node circle {
-  fill: var(--vp-c-brand-2) !important;
-  stroke: var(--vp-c-brand-1) !important;
-
-}
-
-.mermaid .edgePath path {
-  stroke: var(--vp-c-brand-2) !important;
-}
-
-.mermaid text {
-  fill: var(--vp-c-brand-2) !important;
-}
-
 .vp-doc p {
   line-height: 25px;
+}
+
+/* Mermaid: let mermaid pick its own theme; just constrain its SVG size. */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
 }

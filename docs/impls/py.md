@@ -1,65 +1,52 @@
 # Python
 
-The Python implementation ... 
+The Python reference implementation lives at
+[`dcdpr/did-btcr2-py`](https://github.com/dcdpr/did-btcr2-py).
 
-## Source Code
-
-To contribute, install or view the code in-depth, visit the GitHub
-respository https://github.com/dcdpr/did-btcr2-py.
-
-## Contributing
-
-Fork and clone https://github.com/{USERNAME}/did-btcr2-py.git, install
-[from source](#from-source), checkout a new branch, make changes, push to git and
-submit a PR.
+> **Status** — Experimental alpha. No PyPI package yet — install from source.
 
 ## Install
 
-### From main
-
-```bash
+```sh
 pip install libbtcr2@git+https://github.com/dcdpr/did-btcr2-py
 ```
 
-### From source
+From source:
 
-```bash
-# Clone the repository
+```sh
 git clone https://github.com/dcdpr/did-btcr2-py.git
-
-# Change directory
 cd did-btcr2-py
-
-# Setup development env
 python -m venv venv
-
-# Activate the virtual env
-source venv/bin/activate
-
-# Install requirments.txt
+source venv/bin/activate   # Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-<span style="color: orange; font-weight: bold;">WARNING</span>
-<br>This implementation is currently in experimental alpha stage.
-<br>There is no pip package available for the time being.
+## Create
 
-## Usage
+```py
+# TODO — pending stable Python API.
+# See https://github.com/dcdpr/did-btcr2-py for the in-development surface.
+```
 
-* TODO - embed code blocks and/or let users run code block and receive outputs
+## Resolve
 
-### Create
+```py
+# TODO
+```
 
-* TODO - usage examples for Create
+## Update
 
-### Resolve
+```py
+# TODO
+```
 
-* TODO - usage examples for Resolve
+## Deactivate
 
-### Update
+```py
+# TODO
+```
 
-* TODO - usage examples for Update
+## Contributing
 
-### Deactivate
-
-* TODO - usage examples for Deactivate
+Fork <https://github.com/dcdpr/did-btcr2-py>, create a virtualenv, run the
+test suite (`pytest`), submit a PR.

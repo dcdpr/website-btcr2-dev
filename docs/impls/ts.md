@@ -1,274 +1,96 @@
 # TypeScript
 
-The TypeScript implementation is structured as a package within a larger monorepo.
-The method implementation can be found on npmjs.com under the packages name
-[@did-btcr2/method](https://www.npmjs.com/package/@did-btcr2/method).
+The TypeScript reference implementation lives in the
+[`did-btcr2-js` monorepo](https://github.com/dcdpr/did-btcr2-js). Three packages
+are relevant here:
 
-## Source Code
+| Package | Purpose | npm |
+|---|---|---|
+| [`@did-btcr2/method`](https://www.npmjs.com/package/@did-btcr2/method) | Sans-I/O reference implementation of the DID Method (Create / Resolve / Update state machines). | ✅ |
+| [`@did-btcr2/api`](https://www.npmjs.com/package/@did-btcr2/api) | High-level SDK facade with Bitcoin connection, KMS and CAS wiring. | ✅ |
+| [`@did-btcr2/cli`](https://github.com/dcdpr/did-btcr2-js/tree/main/packages/cli) | Command-line interface. | ⏳ not yet published |
 
-To view and contribute to the monorepo, visit the GitHub
-respository https://github.com/dcdpr/did-btcr2-js/packages/method.
-
-To view and contribute to the method implementation, visit the `method` folder
-in the monorepo GitHub repository https://github.com/dcdpr/did-btcr2-js/tree/main/packages/method.
-
-## Contributing
-
-To report bugs or request features, open an issue: https://github.com/dcdpr/did-btcr2-js/issues.
-
-To fix bugs or build features, follow the steps below:
-
-* Install nodejs >= v22.x
-
-### Windows
-```powershell
-# system package manager
-winget install OpenJS.NodeJS.LTS
-# or chocolatey
-choco install nodejs-lts -y
-```
-
-### MacOS / Linux
-```sh
-# install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-# reload your shell, then:
-nvm install --lts
-nvm use --lts
-```
-
-* Install `pnpm`
-```sh
-npm i -g pnpm
-```
-
-* Fork and clone the did-btcr2-js monorepo, then change directory.
-```sh
-git clone https://github.com/{YOUR-USERNAME}/did-btcr2-js.git
-cd did-btcr2-js
-```
-
-* Install dependencies.
-```sh
-pnpm install
-```
-
-* Build project packages.
-```sh
-pnpm build
-```
-
-* Checkout a new branch, make changes, push and submit a PR.
+> **Status** — Both `@did-btcr2/method` and `@did-btcr2/api` are pre-1.0. APIs
+> may change before stabilization.
 
 ## Install
 
-To install the method directly in your existing project:
-
-```bash
-pnpm install @did-btcr2/method
+```sh
+pnpm add @did-btcr2/api @did-btcr2/method
 ```
 
-To install the API to interact with the method and supporting packages in your existing project:
+`@did-btcr2/method` ships browser builds with WASM and top-level await. In
+bundlers (Vite, Webpack, esbuild) you typically need:
 
-```bash
-pnpm install @did-btcr2/api
-```
+* `vite-plugin-wasm` + `vite-plugin-top-level-await` (Vite/Vitepress)
+* `resolve.conditions: ['browser']` so the browser build is picked up
 
-To install the CLI to interact with the method and supporting packages from your terminal:
-
-```bash
-pnpm install -g @did-btcr2/cli
-```
-
-<span style="color: orange; font-weight: bold;">WARNING</span>
-<br>The API and CLI are not stable and/or published for use.
-<br>Keep an eye out here for updates to these packages.
-
-## Usage
-
-The main use cases are the [CRUD Operations](https://dcdpr.github.io/did-btcr2/#crud-operations).
-See the below examples for each available CRUD operation. Currently, the only way to use
-`@did-btcr2/method` is by directly installing the method package. Coming soon, you
-can use the API or CLI. The below CRUD flow shows how to Create, Resolve, Update and Deactivate a DID btcr2 identifier
-and DID document.
-
-### Create
-
-To create a new did:btcr2 identifier, you can either use a compressed secp256k1 public key or an intmediate DID document. 
-
-#### Deterministic Key Pair Identifier
+## Quickstart
 
 ```ts
-import { Didbtcr2 } from '@did-btcr2/method';
+import { createApi } from '@did-btcr2/api';
 import { SchnorrKeyPair } from '@did-btcr2/keypair';
 
-const keys = SchnorrKeyPair.generate() // Or provide your own pubKeyBytes
+const api = createApi({ btc: { network: 'regtest' } });
 
-const { did, initialDocument } = await Didbtcr2.create({
-    idType: 'KEY',
-    pubKeyBytes: keys.publicKey.compressed
-})
-console.log('DID and Initial DID document Created Successfully!', { did, initialDocument });
-```
-
-#### External Intermediate DID document Identifier
-
-```ts
-import { Didbtcr2 } from '@did-btcr2/method';
-import { SchnorrKeyPair } from '@did-btcr2/keypair';
-
-const intermediateDocument = {
-    "id": "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "controller": [
-        "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    ],
-    "@context": [
-        "https://www.w3.org/TR/did-1.1",
-        "https://btcr2.dev/context"
-    ],
-    "verificationMethod": [
-        {
-            "id": "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#key-0",
-            "type": "Multikey",
-            "controller": "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-            "publicKeyMultibase": "zQ3shRAtucgse3YhPjptmFaUKAtTyoqaSAkpj3J1UT2jtMcvg"
-        }
-    ],
-    "authentication": [
-        "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#key-0"
-    ],
-    "assertionMethod": [
-        "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#key-0"
-    ],
-    "capabilityInvocation": [
-        "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#key-0"
-    ],
-    "capabilityDelegation": [
-        "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#key-0"
-    ],
-    "service": [
-        {
-            "id": "did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#service-0",
-            "type": "SingletonBeacon",
-            "serviceEndpoint": "bitcoin:mh9sw9VFe82gNUBbuLXAkBhS42Z1c6JH8E"
-        }
-    ]
-}
-
-const { did, initialDocument } = await Didbtcr2.create({
-    idType: 'EXTERNAL',
-    intermediateDocument
-})
-console.log('DID and Initial DID document Created Successfully!', { did, initialDocument });
-```
-
-### Resolve
-
-```ts
-const identifier = 'did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4';
-const resolution = await Didbtcr2.resolve(identifier);
-console.log('DID Resolved Successfully!', resolution);
-```
-
-### Update
-
-```ts
-const initialDocument = {
-    "id": "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4",
-    "controller": [
-        "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4"
-    ],
-    "@context": [
-        "https://www.w3.org/TR/did-1.1",
-        "https://did-btcr2/TBD/context"
-    ],
-    "verificationMethod": [
-        {
-            "id": "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4#initialKey",
-            "type": "Multikey",
-            "controller": "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4",
-            "publicKeyMultibase": "zQ3shWWSrcY6fu5bzMNy9NmFjtQNKrfBBnF55Ecy2PioFxQKQ"
-        }
-    ],
-    "authentication": [
-        "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4#initialKey"
-    ],
-    "assertionMethod": [
-        "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4#initialKey"
-    ],
-    "capabilityInvocation": [
-        "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4#initialKey"
-    ],
-    "capabilityDelegation": [
-        "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4#initialKey"
-    ],
-    "service": [
-        {
-            "type": "SingletonBeacon",
-            "id": "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4#initialP2PKH",
-            "serviceEndpoint": "bitcoin:mppdEp4wznKcUkDrw7LhrtKpTFx19vXxi8"
-        },
-        {
-            "type": "SingletonBeacon",
-            "id": "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4#initialP2WPKH",
-            "serviceEndpoint": "bitcoin:bcrt1qvcgtvk08lx52apzxxd0c663l6274u4muchq7qg"
-        },
-        {
-            "type": "SingletonBeacon",
-            "id": "did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4#initialP2TR",
-            "serviceEndpoint": "bitcoin:bcrt1put79jyupjf66qap9n089m45qwhd53sqmkej66kf5rsxudajsf6dstl5jqw"
-        }
-    ]
-}
-// Replace with a real identifier that you control
-const identifier = 'did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4';
-
-// Construct a btcr2 Update Patch
-// In this case, we are constructing a patch to replace the first beacon serivce
-// in the "service" array in the DID document associated with the identifier.
-// In reference to the above initialDocument, this is the 0th object in the "service" field
-// with the "id" ending in "#initialP2PKH".
-const patch = JSON.patch.create([
-  {
-    op    : 'replace',
-    path  : '/service/0',
-    value : BeaconUtils.generateBeaconService({
-      id          : identifier,
-      publicKey   : getRandomValues(new Uint8Array(32)), // Or your own publicKey
-      network     : 'regtest',
-      addressType : 'p2pkh',
-      beaconType  : 'SingletonBeacon',
-    })
-  }
-]);
-// Execute the update
-const updated = await Didbtcr2.update({
-  identifier,
-  sourceDocument       : initialDocument,
-  sourceVersionId      : 1,
-  patch,
-  verificationMethodId : initialDocument.capabilityInvocation[0],
-  beaconIds            : [initialDocument.service[0].id],
+const keys = SchnorrKeyPair.generate();
+const did = api.createDid('deterministic', keys.publicKey.compressed, {
+  network: 'regtest',
 });
-console.log('DID document Updated Successfully!', updated);
+
+console.log(did); // did:btcr2:k1…
+
+api.dispose();
 ```
 
-### Deactivate
+## Create
 
-To deactivate a DID and DID document, use the Update flow and create a JSON patch
-for deactivation.
+`did:btcr2` identifiers can be created entirely offline. Two modes:
 
-```ts
-// Follow above steps from Update section
+* **`deterministic`** — encode a compressed secp256k1 public key.
+* **`external`** — encode the bytes of an intermediate DID document.
 
-// Construct a deactivation patch
-const patch = JSON.patch.create([
-  {
-    op    : 'add',
-    path  : '/deactivated',
-    value : true
-  }
-]);
+::: code-group
+<<< @/examples/ts/create-key.ts [Deterministic (k1)]
+<<< @/examples/ts/create-external.ts [External (x1)]
+:::
 
-// Continue following above steps from Update section
+## Resolve
+
+Resolution drives the [`Resolver`](https://dcdpr.github.io/did-btcr2/operations/resolve.html)
+state machine. `api.resolveDid()` injects the configured Bitcoin connection so
+beacon signals are fetched for you.
+
+<<< @/examples/ts/resolve.ts
+
+## Update
+
+Updates are JSON Patches applied to the current DID document. The library
+signs the update with the verification method you nominate and broadcasts it
+through the chosen beacon.
+
+<<< @/examples/ts/update.ts
+
+## Deactivate
+
+Deactivation is an Update with the well-known patch
+`[{ op: 'add', path: '/deactivated', value: true }]`.
+
+<<< @/examples/ts/deactivate.ts
+
+## Contributing
+
+To report bugs or request features, open an issue at
+<https://github.com/dcdpr/did-btcr2-js/issues>.
+
+Local development:
+
+```sh
+git clone https://github.com/dcdpr/did-btcr2-js.git
+cd did-btcr2-js
+pnpm install
+pnpm build
+pnpm test
 ```
+
+Requires Node.js ≥ 22.
