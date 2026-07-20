@@ -5,7 +5,7 @@ exercise the **TypeScript** reference implementation (`@did-btcr2/api`, backed b
 `@did-btcr2/method`, `@did-btcr2/keypair`, and `@did-btcr2/common`) directly in
 your browser via dynamic imports.
 
-* [Create](#create) — produce a new `did:btcr2` identifier from a public key or an intermediate DID document.
+* [Create](#create) — produce a new `did:btcr2` identifier from a public key or a Genesis Document.
 * [Resolve](#resolve) — resolve an identifier using Bitcoin beacon signals and optional sidecar data.
 * [Update](#update) — apply a JSON Patch to the DID document and announce it on-chain.
 * [Deactivate](#deactivate) — special-case Update that adds `{"deactivated": true}` to the DID document.
@@ -20,10 +20,12 @@ Creating a `did:btcr2` identifier is fully off-chain — no network round-trip i
 needed. The Create operation accepts either:
 
 * **`KEY` (deterministic)** — a compressed secp256k1 public key (33 bytes, SEC-encoded).
-* **`EXTERNAL`** — an [intermediate DID document](https://dcdpr.github.io/did-btcr2/#def-intermediate-did-document)
-  with every identifier replaced by the placeholder
-  `did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`.
-  The identifier encodes the SHA-256 hash of the canonicalized document.
+* **`EXTERNAL`** — the SHA-256 hash of a JCS-canonicalized
+  [Genesis Document](https://dcdpr.github.io/did-btcr2/terminology.html#genesis-document):
+  a DID document written against the placeholder identifier `did:btcr2:_` that must
+  include at least one beacon `service` entry. **Random Inputs** builds a valid one via
+  `GenesisDocument.fromPublicKey(pubkey, network)`. Keep the document: the hash is
+  one-way, so resolving the resulting `x1…` identifier requires it as sidecar data.
 
 Supported networks: `bitcoin`, `testnet3`, `testnet4`, `signet`, `mutinynet`, `regtest`.
 
@@ -34,8 +36,11 @@ Supported networks: `bitcoin`, `testnet3`, `testnet4`, `signet`, `mutinynet`, `r
 Resolution drives the [`Resolver`](https://dcdpr.github.io/did-btcr2/operations/resolve.html)
 state machine. The `@did-btcr2/api` facade injects the Bitcoin connection for
 the configured network so beacon signals can be fetched automatically. For
-`did:btcr2:x1…` identifiers you may also provide sidecar data containing the
-initial document, signed updates, CAS announcements and/or SMT proofs.
+`did:btcr2:x1…` identifiers the identifier encodes only a hash, so resolution
+also needs the Genesis Document supplied as sidecar data:
+`{ "genesisDocument": … }` (the Create demo's "Sidecar for Resolve" output
+pastes straight in; a bare genesis document is wrapped automatically), plus any
+signed updates, CAS announcements and/or SMT proofs the DID's history requires.
 
 <DemoResolve />
 

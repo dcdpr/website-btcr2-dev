@@ -4,6 +4,7 @@ import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
 import { useDidBtcr2 } from '../composables/useDidBtcr2';
 import { bytesToHex, hexToBytes, isHex } from './hex';
+import { formatError } from './errors';
 import './demo-fields.css';
 
 const networks: readonly NetworkName[] = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'];
@@ -19,7 +20,7 @@ const intermediateDocError = ref<string | null>(null);
 
 const running = ref(false);
 const response = ref<unknown>(null);
-const initialDocument = ref<unknown>(null);
+const resolveSidecar = ref<unknown>(null);
 
 const isKeyValid = computed(() => {
   if (idType.value !== 'KEY') return false;
@@ -67,10 +68,14 @@ console.log(did);`;
 import { canonicalHashBytes } from '@did-btcr2/common';
 
 const api = createApi({ btc: { network: '${net}' } });
-const intermediateDocument = ${intermediateDocText.value.trim() || '{ /* intermediate DID doc */ }'};
+// Genesis document: placeholder ids (did:btcr2:_) and at least one beacon
+// service. GenesisDocument.fromPublicKey(pubkey, network) builds a valid one.
+const genesisDocument = ${intermediateDocText.value.trim() || '{ /* genesis document */ }'};
 // EXTERNAL identifiers encode the SHA-256 hash of the canonicalized document.
-const genesisHash = canonicalHashBytes(intermediateDocument);
+const genesisHash = canonicalHashBytes(genesisDocument);
 const did = api.createDid('external', genesisHash, { network: '${net}' });
+// Resolving this DID later needs the same document back via sidecar:
+//   api.resolveDid(did, { sidecar: { genesisDocument } })
 console.log(did);`;
   }
   return '// Choose network and idType, then fill the fields to see the call';
@@ -86,40 +91,45 @@ async function randomize() {
     intermediateDocText.value = '';
   } else {
     pubKeyHex.value = '';
-    // Build a minimal intermediate DID document from the public key. The
-    // identifier fields are placeholders that the create() call will replace
-    // when it returns the resolved DID.
-    const PLACEHOLDER = 'did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-    intermediateDocText.value = JSON.stringify(
-      {
-        '@context': ['https://www.w3.org/TR/did-1.1', 'https://btcr2.dev/context'],
-        id: PLACEHOLDER,
-        controller: [PLACEHOLDER],
-        verificationMethod: [
-          {
-            id: `${PLACEHOLDER}#key-0`,
-            type: 'Multikey',
-            controller: PLACEHOLDER,
-            // Multikey requires a base58btc multibase string (zQ3s… prefix).
-            publicKeyMultibase: keys.publicKey.encode(),
-          },
-        ],
-        authentication: [`${PLACEHOLDER}#key-0`],
-        assertionMethod: [`${PLACEHOLDER}#key-0`],
-        capabilityInvocation: [`${PLACEHOLDER}#key-0`],
-        capabilityDelegation: [`${PLACEHOLDER}#key-0`],
-      },
-      null,
-      2,
-    );
+    generateGenesisDoc(keys.publicKey.compressed, selectedNetwork.value as Network);
   }
 }
+
+// Pubkey behind the last auto-generated genesis doc, kept so a network change
+// can regenerate the doc (its beacon address is network-specific). The text is
+// kept too so we never clobber a document the user has hand-edited.
+let lastGenPubKey: Uint8Array | null = null;
+let lastGenDocText = '';
+
+/**
+ * Build the genesis document via the library, not by hand: resolution
+ * validates that it uses placeholder ids (did:btcr2:_) AND carries at least
+ * one beacon service; docs without a `service` fail with "Invalid service".
+ */
+function generateGenesisDoc(pubKey: Uint8Array, network: Network) {
+  if (!modules.value) return;
+  const genesis = modules.value.api.GenesisDocument.fromPublicKey(pubKey, network);
+  lastGenPubKey = pubKey;
+  lastGenDocText = JSON.stringify(genesis, null, 2);
+  intermediateDocText.value = lastGenDocText;
+}
+
+watch(selectedNetwork, () => {
+  if (
+    idType.value === 'EXTERNAL' &&
+    selectedNetwork.value &&
+    lastGenPubKey &&
+    intermediateDocText.value === lastGenDocText
+  ) {
+    generateGenesisDoc(lastGenPubKey, selectedNetwork.value as Network);
+  }
+});
 
 async function run() {
   if (!modules.value || !canRun.value) return;
   running.value = true;
   response.value = null;
-  initialDocument.value = null;
+  resolveSidecar.value = null;
   try {
     const network = selectedNetwork.value as Network;
     const api = createApiForNetwork(network);
@@ -134,40 +144,25 @@ async function run() {
         const genesisHash = modules.value.common.canonicalHashBytes(doc);
         const did = api.createDid('external', genesisHash, { network });
         response.value = { did };
-        initialDocument.value = substitutePlaceholder(doc, did);
+        // The hash is one-way, so resolving this DID requires this exact
+        // placeholder-form document back, under the `genesisDocument` sidecar
+        // key. Hand the user a ready-to-paste payload for the Resolve demo.
+        resolveSidecar.value = { genesisDocument: doc };
       }
     } finally {
       api.dispose();
     }
   } catch (err: unknown) {
-    response.value = err instanceof Error ? err.stack || err.message : String(err);
+    response.value = formatError(err);
   } finally {
     running.value = false;
   }
 }
 
-/**
- * Walk a parsed JSON doc and replace every placeholder DID string with the
- * resolved one. Operates on the parsed object, not a stringified copy — the
- * previous implementation double-stringified and then JSON.parsed a string,
- * which produced a string instead of the doc object.
- */
-function substitutePlaceholder(doc: unknown, realDid: string): unknown {
-  const PLACEHOLDER = 'did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-  if (typeof doc === 'string') return doc.split(PLACEHOLDER).join(realDid);
-  if (Array.isArray(doc)) return doc.map((v) => substitutePlaceholder(v, realDid));
-  if (doc && typeof doc === 'object') {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(doc)) {
-      out[k] = substitutePlaceholder(v, realDid);
-    }
-    return out;
-  }
-  return doc;
-}
-
 const extra = computed(() =>
-  initialDocument.value ? { label: 'Initial Document', value: initialDocument.value } : null,
+  resolveSidecar.value
+    ? { label: 'Sidecar for Resolve (paste into the Resolve demo)', value: resolveSidecar.value }
+    : null,
 );
 </script>
 
@@ -217,15 +212,16 @@ const extra = computed(() =>
     </div>
 
     <div v-else-if="idType === 'EXTERNAL'" class="demo-field">
-      <span class="demo-label">Intermediate DID Document (JSON)</span>
+      <span class="demo-label">Genesis Document (JSON, placeholder ids + a beacon service; Random Inputs builds one)</span>
       <textarea
         class="demo-textarea"
         v-model="intermediateDocText"
         rows="10"
         spellcheck="false"
         placeholder="{
-  &quot;@context&quot;: [&quot;https://www.w3.org/TR/did-1.1&quot;],
-  &quot;id&quot;: &quot;did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;
+  &quot;id&quot;: &quot;did:btcr2:_&quot;,
+  &quot;verificationMethod&quot;: [{ &quot;id&quot;: &quot;did:btcr2:_#key-0&quot;, … }],
+  &quot;service&quot;: [{ &quot;type&quot;: &quot;SingletonBeacon&quot;, … }]
 }"
       />
       <p v-if="intermediateDocText && intermediateDocError" class="demo-error">
