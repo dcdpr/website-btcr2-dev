@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        1.1.0
+Version:        1.1.1
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -54,6 +54,12 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
+* Mon Jul 20 2026 jintekc <github@jintek.consulting> - 1.1.1-1
+- Fix the external (x1) create/resolve demo flow: build genesis documents
+  with GenesisDocument.fromPublicKey (placeholder ids plus the required
+  beacon service), resolve via the sidecar genesisDocument key, and show
+  underlying error causes in all demos.
+
 * Fri Jul 17 2026 jintekc <github@jintek.consulting> - 1.1.0-1
 - Fix Resolve demo: route mempool.space through the site's same-origin
   /mempool nginx proxy via api config (no more global fetch patching).
