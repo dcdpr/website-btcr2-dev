@@ -4,6 +4,7 @@ import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
 import { useDidBtcr2 } from '../composables/useDidBtcr2';
 import { hexToBytes, isHex } from './hex';
+import { formatError } from './errors';
 import './demo-fields.css';
 
 const networks: readonly NetworkName[] = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'];
@@ -111,7 +112,7 @@ async function run() {
     });
     response.value = result;
   } catch (err: unknown) {
-    response.value = err instanceof Error ? err.stack || err.message : String(err);
+    response.value = formatError(err);
   } finally {
     api.dispose();
     running.value = false;

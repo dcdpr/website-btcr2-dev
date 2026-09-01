@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
 import { useDidBtcr2 } from '../composables/useDidBtcr2';
+import { formatError } from './errors';
 import './demo-fields.css';
 
 const networks: readonly NetworkName[] = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'];
@@ -44,15 +45,42 @@ const canRun = computed(
     !!(selectedNetwork.value || inferredNetwork.value),
 );
 
+const SIDECAR_KEYS = ['genesisDocument', 'updates', 'casUpdates', 'smtProofs'];
+
+/**
+ * The library reads the genesis document from `sidecar.genesisDocument`.
+ * Accept either a full sidecar object or a bare placeholder-form genesis
+ * document (the Create demo's textarea content) and wrap the latter.
+ * Returns undefined when the text is empty, invalid JSON, or an empty object.
+ */
+function normalizeSidecar(raw: string): Record<string, unknown> | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    return undefined;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
+  const obj = parsed as Record<string, unknown>;
+  if (Object.keys(obj).length === 0) return undefined;
+  if (SIDECAR_KEYS.some((k) => k in obj)) return obj;
+  if (typeof obj.id === 'string') return { genesisDocument: obj };
+  return obj;
+}
+
 const snippet = computed(() => {
   const id = did.value || 'did:btcr2:k1...';
   const net = selectedNetwork.value || inferredNetwork.value || 'regtest';
-  const trimmedSidecar = sidecarText.value.trim();
-  if (isExternal.value && trimmedSidecar && trimmedSidecar !== '{}') {
+  const sidecar = isExternal.value ? normalizeSidecar(sidecarText.value) : undefined;
+  if (sidecar) {
     return `import { createApi } from '@did-btcr2/api';
 
 const api = createApi({ btc: { network: '${net}' } });
-const result = await api.resolveDid('${id}', { sidecar: ${trimmedSidecar} });
+// x1 DIDs resolve from the placeholder-form genesis document, supplied via
+// sidecar.genesisDocument (or fetched from a configured CAS).
+const result = await api.resolveDid('${id}', { sidecar: ${JSON.stringify(sidecar, null, 2)} });
 console.log(result);`;
   }
   return `import { createApi } from '@did-btcr2/api';
@@ -69,13 +97,10 @@ async function run() {
   const net = (selectedNetwork.value || inferredNetwork.value) as Network;
   const api = createApiForNetwork(net);
   try {
-    const opts =
-      isExternal.value && sidecarText.value.trim()
-        ? { sidecar: JSON.parse(sidecarText.value) }
-        : undefined;
-    response.value = await api.resolveDid(did.value, opts);
+    const sidecar = isExternal.value ? normalizeSidecar(sidecarText.value) : undefined;
+    response.value = await api.resolveDid(did.value, sidecar ? { sidecar } : undefined);
   } catch (err: unknown) {
-    response.value = err instanceof Error ? err.stack || err.message : String(err);
+    response.value = formatError(err);
   } finally {
     api.dispose();
     running.value = false;
@@ -116,13 +141,13 @@ async function run() {
     </div>
 
     <div v-if="isExternal" class="demo-field">
-      <span class="demo-label">Sidecar Data (JSON, optional — required for x1 DIDs without CAS)</span>
+      <span class="demo-label">Sidecar Data (JSON; x1 DIDs need the placeholder-form genesis document from Create)</span>
       <textarea
         class="demo-textarea"
         v-model="sidecarText"
         rows="6"
         spellcheck="false"
-        placeholder="{ &quot;initialDocument&quot;: { ... } }"
+        placeholder="{ &quot;genesisDocument&quot;: { &quot;id&quot;: &quot;did:btcr2:_&quot;, … } }"
       />
       <p v-if="sidecarText && sidecarError" class="demo-error">
         JSON error: {{ sidecarError }}
