@@ -8,7 +8,8 @@ const api = createApi({ btc: { network: 'regtest' } });
 const did =
   'did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4';
 
-const signer = new LocalSigner(secretKeyBytes); // 32-byte secp256k1 secret key
+const secretKeyBytes = new Uint8Array(32); // your 32-byte secp256k1 secret key
+const signer = new LocalSigner(secretKeyBytes);
 
 const result = await api.updateDid({
   did,

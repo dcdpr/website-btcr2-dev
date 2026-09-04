@@ -1,4 +1,6 @@
-# Python
+---
+title: Python
+---
 
 The Python reference implementation lives at
 [`dcdpr/did-btcr2-py`](https://github.com/dcdpr/did-btcr2-py).

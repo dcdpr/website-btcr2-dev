@@ -1,4 +1,6 @@
-# Specification
+---
+title: Specification
+---
 
 To read the did:btcr2 DID Method specification, visit https://dcdpr.github.io/did-btcr2. 
 

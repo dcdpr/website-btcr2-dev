@@ -1,4 +1,6 @@
-# Java
+---
+title: Java
+---
 
 The Java integration is delivered via the [DIF Universal Resolver](https://dev.uniresolver.io/)
 and [Universal Registrar](https://uniregistrar.io/) drivers maintained by Danube Tech.

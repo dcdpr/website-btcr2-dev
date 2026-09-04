@@ -1,4 +1,13 @@
-# TypeScript
+---
+title: TypeScript
+---
+
+import { Tabs, TabItem, Code } from '@astrojs/starlight/components';
+import createKey from '../../../examples/ts/create-key.ts?raw';
+import createExternal from '../../../examples/ts/create-external.ts?raw';
+import resolveExample from '../../../examples/ts/resolve.ts?raw';
+import updateExample from '../../../examples/ts/update.ts?raw';
+import deactivateExample from '../../../examples/ts/deactivate.ts?raw';
 
 The TypeScript reference implementation lives in the
 [`did-btcr2-js` monorepo](https://github.com/dcdpr/did-btcr2-js). The packages
@@ -13,7 +22,9 @@ most relevant to consumers:
 | [`@did-btcr2/aggregation`](https://www.npmjs.com/package/@did-btcr2/aggregation) | Aggregated-beacon protocol with Nostr and HTTP/REST transports. |
 | [`@did-btcr2/cli`](https://www.npmjs.com/package/@did-btcr2/cli) | Command-line interface. |
 
-> **Status**: all packages are pre-1.0. APIs may change before stabilization.
+:::note[Status]
+All packages are pre-1.0. APIs may change before stabilization.
+:::
 
 ## Install
 
@@ -23,9 +34,7 @@ pnpm add @did-btcr2/api @did-btcr2/keypair @did-btcr2/common
 
 The packages are pure JavaScript (no WASM) and target both Node.js ≥ 22 and
 modern browsers. Each ships a prebuilt browser bundle selected via the
-`browser` condition in `exports`; in Vite set
-`resolve.conditions: ['browser']` if your build resolves with Node conditions
-(e.g. VitePress SSR).
+`browser` condition in `exports`.
 
 ## Quickstart
 
@@ -53,10 +62,14 @@ api.dispose();
 * **`external`**: encode the SHA-256 hash of the canonicalized intermediate
   DID document (`canonicalHashBytes` from `@did-btcr2/common`).
 
-::: code-group
-<<< @/examples/ts/create-key.ts [Deterministic (k1)]
-<<< @/examples/ts/create-external.ts [External (x1)]
-:::
+<Tabs>
+  <TabItem label="Deterministic (k1)">
+    <Code code={createKey} lang="ts" title="create-key.ts" />
+  </TabItem>
+  <TabItem label="External (x1)">
+    <Code code={createExternal} lang="ts" title="create-external.ts" />
+  </TabItem>
+</Tabs>
 
 ## Resolve
 
@@ -64,7 +77,7 @@ Resolution drives the [`Resolver`](https://dcdpr.github.io/did-btcr2/operations/
 state machine. `api.resolveDid()` injects the configured Bitcoin connection so
 beacon signals are fetched for you.
 
-<<< @/examples/ts/resolve.ts
+<Code code={resolveExample} lang="ts" title="resolve.ts" />
 
 ## Update
 
@@ -74,19 +87,19 @@ signer); the library signs the update with the verification method you
 nominate and broadcasts it through the chosen beacon. The result contains the
 signed update, the signal `txid`, and any per-beacon sidecar artifacts.
 
-<<< @/examples/ts/update.ts
+<Code code={updateExample} lang="ts" title="update.ts" />
 
 ## Deactivate
 
 Deactivation is an Update with the well-known patch
 `[{ op: 'add', path: '/deactivated', value: true }]`.
 
-<<< @/examples/ts/deactivate.ts
+<Code code={deactivateExample} lang="ts" title="deactivate.ts" />
 
 ## Contributing
 
 To report bugs or request features, open an issue at
-<https://github.com/dcdpr/did-btcr2-js/issues>.
+[github.com/dcdpr/did-btcr2-js/issues](https://github.com/dcdpr/did-btcr2-js/issues).
 
 Local development:
 

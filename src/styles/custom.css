@@ -1,0 +1,40 @@
+/* Brand accent (btcr2 cyan) for Starlight's theme. */
+:root {
+  --sl-color-accent-low: #0d3a40;
+  --sl-color-accent: #38cee0;
+  --sl-color-accent-high: #a6e8f0;
+}
+:root[data-theme='light'] {
+  --sl-color-accent-low: #c9f0f5;
+  --sl-color-accent: #0d688a;
+  --sl-color-accent-high: #123456;
+}
+
+/* Aliases so the demo components (written against VitePress theme variables)
+   keep working unmodified under Starlight. */
+:root {
+  --vp-c-brand-1: var(--sl-color-accent);
+  --vp-c-text-1: var(--sl-color-text);
+  --vp-c-text-2: var(--sl-color-gray-3);
+  --vp-c-divider: var(--sl-color-hairline);
+  --vp-c-bg: var(--sl-color-bg);
+  --vp-c-alt: var(--sl-color-gray-5);
+}
+
+select,
+input,
+textarea,
+button {
+  color-scheme: inherit;
+}
+
+option {
+  background-color: var(--sl-color-bg);
+  color: var(--sl-color-text);
+}
+
+/* Mermaid: let mermaid pick its own theme; just constrain its SVG size. */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}

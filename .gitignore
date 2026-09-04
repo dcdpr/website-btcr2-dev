@@ -50,5 +50,5 @@ release/
 dist/
 cache/
 
-### Astro (branch residue) ###
+### Astro ###
 .astro/

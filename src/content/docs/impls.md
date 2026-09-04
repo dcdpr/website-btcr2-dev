@@ -1,4 +1,6 @@
-# Implementations
+---
+title: Implementations
+---
 
 `did:btcr2` is implemented across four languages today. The TypeScript reference
 implementation is the most complete; Java is delivered as Universal

@@ -1,9 +1,6 @@
 ---
-mermaidTheme: forest
-title: DID BTCR2 Diagrams
+title: Diagrams
 ---
-
-# Diagrams
 
 Below are UML diagrams of the various objects and algorithms in the specification.
 
