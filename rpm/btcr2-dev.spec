@@ -7,14 +7,15 @@ License:        MPL-2.0
 URL:            https://btcr2.dev
 Source0:        %{name}-%{version}.tar.gz
 
-BuildRequires:  nodejs >= 22
+BuildRequires:  nodejs >= 22.12
 BuildRequires:  npm >= 10
 Requires:       nginx
 BuildArch:      noarch
 
 %description
 DCD's static website built with the Astro 'starlight' framework.
-This package includes the built static files and nginx configuration.
+This package includes the built static files. It does not include the
+nginx configuration.
 
 %prep
 %setup -q -n %{name}
@@ -54,9 +55,10 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
-* Fri Jul 17 2026 jintekc <github@jintek.consulting> - 2.0.0-1
+* Mon Sep 07 2026 jintekc <github@jintek.consulting> - 2.0.0-1
 - Migrate the site to Astro Starlight (build output moves from
   docs/.vitepress/dist to dist).
+- Require Node.js 22.12 or newer to build.
 
 * Mon Jul 20 2026 jintekc <github@jintek.consulting> - 1.1.1-1
 - Fix the external (x1) create/resolve demo flow: build genesis documents
