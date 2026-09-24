@@ -21,7 +21,7 @@ Run `pnpm typecheck && pnpm build` before committing. No lockfile is committed (
 ## Architecture
 
 ### Content lives in `src/content/docs/`
-- Pages: `index.mdx` (splash home), `spec.md`, `demo.mdx`, `diagrams.md`, `parity.md`, `impls.md`, `impls/{java,py,rs}.md`, and the TypeScript group `impls/ts/{index.mdx,sdk.mdx,cli.md}` (Overview, SDK, CLI).
+- Pages: `index.mdx` (splash home), `spec.md`, `demo.mdx`, `diagrams.md`, `parity.md`, `impls.md`, `impls/{java,py,rs}.md`, and the TypeScript group `impls/ts/{index.mdx,sdk.mdx,cli.mdx}` (Overview, SDK, CLI).
 - Starlight requires a `title` in every page's frontmatter; do not add an H1 in the body.
 - `.mdx` pages import components explicitly; `.md` pages are plain markdown. MDX does NOT support `<https://url>` autolinks; use `[text](url)`.
 - TS example snippets live in `src/examples/ts/` and are embedded in `impls/ts/sdk.mdx` via `?raw` imports + Starlight's `<Code>` component. They are typechecked by `astro check`, so they must be self-contained. They import only `@did-btcr2/api`. `astro check` does not typecheck `.vue` files.

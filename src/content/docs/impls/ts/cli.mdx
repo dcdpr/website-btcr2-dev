@@ -1,0 +1,183 @@
+---
+title: 'CLI: @did-btcr2/cli'
+description: Create, resolve, update, and deactivate did:btcr2 identifiers with the btcr2 command.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+`@did-btcr2/cli` is the command-line tool of the TypeScript implementation. The
+`btcr2` command wraps the [SDK](/impls/ts/sdk/). It also keeps your keys in an
+encrypted keystore and your endpoints in a config file.
+
+## Install
+
+```sh
+npm install -g @did-btcr2/cli
+btcr2 --version
+```
+
+The CLI needs Node.js 22 or newer. To run the CLI with no install, use
+`npx @did-btcr2/cli <command>`.
+
+## Configure
+
+```sh
+btcr2 init
+```
+
+`init` makes the home directory `~/.btcr2`, a config file, and an encrypted
+keystore. It asks for a new passphrase. A second run changes nothing.
+
+The DID gives the network to `resolve`, `update`, and `deactivate`. `create` and
+`genesis build` take the network from `-n`. A setting comes from the first of: a
+flag, an environment variable, the profile of the network in `config.json`, the
+default of the network. The default REST hosts are the same as in the
+[SDK](/impls/ts/sdk/#configure).
+
+```sh
+# Optional: the CAS. The default is the read-only gateway https://ipfs.io.
+btcr2 config set profiles.mutinynet.cas.gateway 'https://trustless-gateway.link'
+```
+
+Other settings:
+
+* `--btc-rest <url>` sets your own Esplora host.
+* `--btc-rpc-url <url>` sets a Bitcoin Core RPC endpoint.
+* `--cas-rpc-url <url>` connects a writable CAS (the RPC endpoint of an IPFS node).
+* `btcr2 config effective -n mutinynet` shows each setting and its source.
+  `btcr2 config doctor -n mutinynet` tests the endpoints.
+
+The keystore is one file (`~/.btcr2/keystore.json`). Each secret key is
+encrypted with argon2id and XChaCha20-Poly1305. The CLI gets the passphrase from
+`BTCR2_KEYSTORE_PASSPHRASE`, then `--passphrase-file`, then an unlocked session,
+then a prompt. `btcr2 keystore unlock --ttl 2h` keeps a session, and
+`btcr2 keystore lock` ends it.
+
+## Create
+
+Creation is offline: no chain read and no fee. There are two identifier types:
+
+* **`k1` (deterministic):** the identifier encodes a compressed secp256k1 public
+  key. The initial DID document follows from the key.
+* **`x1` (external):** the identifier encodes the SHA-256 hash of a
+  [Genesis Document](https://dcdpr.github.io/did-btcr2/terminology.html#genesis-document).
+  `genesis build` builds one from keys, beacons, and services. Keep the
+  document: a resolver needs it as sidecar data.
+
+<Tabs>
+  <TabItem label="Deterministic (k1)">
+
+```sh
+btcr2 create -n mutinynet
+```
+
+`create` makes a new key, stores it in the keystore, and makes it the active
+key. It prints the DID and the beacon address to fund.
+
+  </TabItem>
+  <TabItem label="External (x1)">
+
+```sh
+btcr2 key generate --name alice
+cat > spec.json <<'JSON'
+{
+  "verificationMethods": [{ "key": "alice" }],
+  "services": [
+    { "id": "#website", "type": "LinkedDomains", "serviceEndpoint": "https://example.com" }
+  ]
+}
+JSON
+btcr2 genesis build -n mutinynet --spec spec.json --out genesis.json
+```
+
+`genesis build` writes the genesis document to `genesis.json`. It prints the DID
+and the beacon address to fund. Use a key that no other DID uses: two DIDs with
+one key share a beacon address, and Bitcoin then links them.
+
+  </TabItem>
+</Tabs>
+
+## Resolve
+
+```sh
+btcr2 resolve -i did:btcr2:k1q5p...
+```
+
+The CLI reads the beacon signals from the network of the DID and applies each
+update that the sidecar data or the CAS supplies. The output is the DID document
+and its metadata (`versionId`, `confirmations`, `deactivated`).
+
+Sidecar data comes from the DID controller:
+
+* An `x1` DID needs its genesis document: `--genesis-document genesis.json`.
+* A DID with updates needs every signed update, unless a CAS holds them. Pass
+  them in the resolution options: `-r '{"sidecar":{"updates":[...]}}'`, or `-p`
+  with a JSON file.
+
+`versionId` and `versionTime` in the resolution options select an earlier
+version of the document.
+
+## Update
+
+An update is a [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902) to the
+DID document. The CLI signs the update with the active key and broadcasts a
+beacon signal. The signal is a Bitcoin transaction with the hash of the update in
+its `OP_RETURN` output, so the beacon address must hold a confirmed UTXO. Fund
+the beacon address that `create` printed, and wait for one confirmation.
+
+```sh
+DID=did:btcr2:k1q5p...   # your DID
+PATCH=$(jq -nc --arg id "$DID#website" \
+  '[{op: "add", path: "/service/-", value: {id: $id, type: "LinkedDomains", serviceEndpoint: "https://example.com"}}]')
+btcr2 -o json update -i "$DID" -p "$PATCH" | jq '.data.signedUpdate' > signed-update.json
+```
+
+Keep `signed-update.json`. Bitcoin holds only its hash. A resolver needs the
+signed update as sidecar data, unless you publish it to a CAS. `-m` (the
+verification method) and `-b` (the beacon) are optional: the CLI uses the method
+that publishes the signing key and the beacon that holds the only spendable UTXO.
+
+### Publish to a CAS
+
+By default, the CLI publishes nothing (`--publish-to-cas never`). The controller
+then gives each signed update to the relying parties as sidecar data, and only
+they can see the change. With a writable CAS, `--publish-to-cas auto` publishes
+the signed update before the broadcast. Any resolver can then get the update
+from the CAS with no sidecar data. `always` refuses the update if no writable CAS
+is configured.
+
+```sh
+btcr2 update -i "$DID" -p "$PATCH" --publish-to-cas auto --cas-rpc-url http://127.0.0.1:5001
+```
+
+## Deactivate
+
+Deactivation is an update with the patch
+`[{ "op": "add", "path": "/deactivated", "value": true }]`.
+`btcr2 deactivate` adds the patch for you. Deactivation is permanent.
+
+```sh
+btcr2 -o json deactivate -i "$DID" \
+  -r "$(jq -c '{sidecar: {updates: [.]}}' signed-update.json)" \
+  | jq '.data.signedUpdate' > signed-deactivate.json
+```
+
+Add the deactivation to the sidecar data: a resolver needs it to see the
+deactivation.
+
+## Use in scripts
+
+* `-o json` prints `{ "action": ..., "data": ... }`. Hints go to stderr.
+  `--quiet` removes them.
+* The exit code is `0` on success and `1` on an error.
+* A script with no terminal needs `BTCR2_KEYSTORE_PASSPHRASE` or
+  `--passphrase-file` to sign.
+
+## Reference
+
+* `btcr2 <command> --help` lists the flags of a command.
+* [CLI reference](https://github.com/dcdpr/did-btcr2-js/tree/main/packages/cli/docs):
+  one page per command, and a longer walkthrough in
+  [DEMO.md](https://github.com/dcdpr/did-btcr2-js/blob/main/packages/cli/docs/DEMO.md).
+* [`@did-btcr2/cli` on npm](https://www.npmjs.com/package/@did-btcr2/cli) and its
+  [changelog](https://github.com/dcdpr/did-btcr2-js/blob/main/packages/cli/CHANGELOG.md).
