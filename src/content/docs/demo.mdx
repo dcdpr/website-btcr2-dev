@@ -57,7 +57,7 @@ Sidecar data is optional:
   contains them.
 
 Resolution ignores a beacon signal with fewer confirmations than `minConf`. The
-specification default is 6. Set a lower value to see a fresh update sooner.
+specification default is 6.
 
 <DemoResolve client:only="vue" />
 
@@ -69,11 +69,6 @@ patches, signs the update with your key, and broadcasts a beacon signal. The
 beacon address must hold a confirmed UTXO: fund it first. If you leave the
 verification method or the beacon empty, the api uses the method that
 publishes your key and the beacon that holds the only spendable UTXO.
-
-The form resolves with `minConf` 1: the update must build on the version of
-your last update. With the resolution default (6), the resolution misses an
-update with fewer than 6 confirmations. The new update then targets the same
-`versionId`, and resolution of the DID fails with `LATE_PUBLISHING_ERROR`.
 
 The response includes the signed update and the signal `txid`. The "Sidecar for
 Resolve" output adds the signed update to the sidecar data that you gave. Paste

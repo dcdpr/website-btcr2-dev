@@ -12,9 +12,7 @@ const updates: SignedBTCR2Update[] = [/* every signed update of the DID, in orde
 const { txid, signedUpdate } = await api.deactivateDid({
   did,
   signer: new LocalSigner(secretKey),
-  // minConf: 1, so that the resolution sees an update with 1 confirmation.
-  // Else the deactivation can build on an old version (LATE_PUBLISHING_ERROR).
-  resolutionOptions: { sidecar: { updates }, minConf: 1 },
+  resolutionOptions: { sidecar: { updates } },
 });
 
 // Add signedUpdate to the sidecar data: a resolver needs it to see the

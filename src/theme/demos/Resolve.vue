@@ -121,8 +121,7 @@ async function run() {
       <input class="demo-input" type="number" min="1" step="1" v-model.number="minConf" />
       <p v-if="!isMinConfValid" class="demo-warn">Must be a whole number, 1 or more.</p>
       <p v-else class="demo-hint">
-        Resolution ignores a beacon signal with fewer confirmations. The default is 6. A lower
-        value shows a fresh update sooner.
+        Resolution ignores a beacon signal with fewer confirmations. The default is 6.
       </p>
     </label>
   </DemoCard>

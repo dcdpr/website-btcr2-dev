@@ -29,11 +29,7 @@ const verificationMethodId = ref('');
 const beaconId = ref('');
 const sidecarText = ref('');
 const sidecarError = ref<string | null>(null);
-// The update builds on the version that this resolution finds. With the
-// resolution default (6), the resolution misses an update with fewer than
-// 6 confirmations. The new update then targets the same versionId, and
-// resolution of the DID fails with LATE_PUBLISHING_ERROR.
-const minConf = ref(1);
+const minConf = ref(6);
 const signingMaterialHex = ref('');
 
 const running = ref(false);
@@ -94,7 +90,7 @@ const snippet = computed(() => {
   ];
   const resolution = [
     ...(sidecar ? [`sidecar: ${JSON.stringify(sidecar)}`] : []),
-    `minConf: ${minConf.value}`,
+    ...(minConf.value !== 6 ? [`minConf: ${minConf.value}`] : []),
   ];
   if (resolution.length) lines.push(`  resolutionOptions: { ${resolution.join(', ')} },`);
   const call = props.op === 'deactivate' ? 'deactivateDid' : 'updateDid';
@@ -124,7 +120,10 @@ async function run() {
       signer: new modules.value.api.LocalSigner(hexToBytes(signingMaterialHex.value)),
       ...(verificationMethodId.value ? { verificationMethodId: verificationMethodId.value } : {}),
       ...(beaconId.value ? { beaconId: beaconId.value } : {}),
-      resolutionOptions: { ...(sidecar ? { sidecar } : {}), minConf: minConf.value },
+      resolutionOptions: {
+        ...(sidecar ? { sidecar } : {}),
+        ...(minConf.value !== 6 ? { minConf: minConf.value } : {}),
+      },
     };
     const result =
       props.op === 'deactivate'
@@ -248,8 +247,7 @@ const extra = computed(() =>
         <input class="demo-input" type="number" min="1" step="1" v-model.number="minConf" />
         <p v-if="!isMinConfValid" class="demo-warn">Must be a whole number, 1 or more.</p>
         <p v-else class="demo-hint">
-          Keep 1. The update builds on the version that the resolution finds. If the
-          resolution misses your last update, the DID stops resolving.
+          Resolution ignores a beacon signal with fewer confirmations. The default is 6.
         </p>
       </label>
       <label class="demo-field">

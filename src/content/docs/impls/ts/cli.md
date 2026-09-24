@@ -83,11 +83,11 @@ update itself: keep it.
 
 ### 6. Resolve version 2
 
-Wait for one confirmation, and then about one more minute. Then give the signed
+Wait for 6 confirmations (about 3 minutes on mutinynet). Then give the signed
 update back as sidecar data:
 
 ```sh
-btcr2 resolve -i "$DID" --min-conf 1 \
+btcr2 resolve -i "$DID" \
   -r "$(jq -c '{sidecar:{updates:[.]}}' signed-update.json)"
 ```
 
@@ -98,7 +98,7 @@ that get the signed update can see the change.
 ### 7. Deactivate
 
 ```sh
-btcr2 -o json deactivate -i "$DID" --min-conf 1 \
+btcr2 -o json deactivate -i "$DID" \
   -r "$(jq -c '{sidecar:{updates:[.]}}' signed-update.json)" \
   | jq '.data.signedUpdate' > signed-deactivate.json
 ```
@@ -107,7 +107,7 @@ Deactivation is permanent. To resolve the deactivated DID, pass both signed
 updates:
 
 ```sh
-btcr2 resolve -i "$DID" --min-conf 1 \
+btcr2 resolve -i "$DID" \
   -r "$(jq -sc '{sidecar:{updates:.}}' signed-update.json signed-deactivate.json)"
 ```
 

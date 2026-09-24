@@ -19,8 +19,7 @@ const sidecar: Sidecar = {
   updates: [/* the signed updates of the DID, in order */],
 };
 
-// minConf (default 6) is the number of confirmations that a beacon signal
-// needs before resolution applies it. A lower value shows an update sooner.
-const result = await api.resolveDid(did, { sidecar, minConf: 1 });
+// Resolution applies a beacon signal after it has 6 confirmations.
+const result = await api.resolveDid(did, { sidecar });
 // didDocumentMetadata: { versionId, confirmations, deactivated, updated? }
 console.log(result.didDocument, result.didDocumentMetadata);
