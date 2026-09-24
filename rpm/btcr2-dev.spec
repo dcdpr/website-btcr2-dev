@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        2.0.0
+Version:        2.1.0
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -55,6 +55,11 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
+* Thu Sep 24 2026 jintekc <github@jintek.consulting> - 2.1.0-1
+- Move the demos and the TypeScript docs to @did-btcr2/api 0.27.
+- The demos call the Bitcoin REST hosts directly. The site needs no
+  /mempool proxy.
+
 * Mon Sep 07 2026 jintekc <github@jintek.consulting> - 2.0.0-1
 - Migrate the site to Astro Starlight (build output moves from
   docs/.vitepress/dist to dist).
