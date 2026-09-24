@@ -114,18 +114,6 @@ The signer is any `Signer`: `LocalSigner` for a secret key in memory, or
 
 <Code code={updateExample} lang="ts" title="update.ts" />
 
-:::caution[Update only after the previous update counts]
-`updateDid` and `deactivateDid` resolve the DID first. Resolution ignores a
-beacon signal with fewer than `minConf` confirmations (default 6). If the
-previous update is not at that depth, the new update builds on the old version.
-Both updates then target the same `versionId`, and resolution of the DID fails
-with `LATE_PUBLISHING_ERROR`.
-
-Before you update, make sure that the resolution shows the `versionId` of your
-last update. Wait for 6 confirmations (about 1 hour on mainnet, 3 minutes on
-mutinynet), or pass `resolutionOptions: { minConf: 1 }`.
-:::
-
 Every update failure that the specification names is an `UpdateError` of type
 `INVALID_DID_UPDATE`. Examples: a patch that fails to apply, a key that the
 document does not list in `capabilityInvocation`, and a deactivated DID.

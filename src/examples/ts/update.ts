@@ -8,12 +8,17 @@ const did = 'did:btcr2:k1q5p...'; // your DID
 const secretKey = new Uint8Array(32); // your 32-byte secp256k1 secret key
 const signer = new LocalSigner(secretKey);
 
-// The api resolves the current document first. verificationMethodId and
-// beaconId are optional: the api uses the method that publishes the
-// signer's key and the beacon that holds the only spendable UTXO.
+// Update 1: link a website to the DID. The api resolves the current
+// document first. verificationMethodId and beaconId are optional: the api
+// uses the method that publishes the signer's key and the beacon that
+// holds the only spendable UTXO.
 const first = await api.updateDid({
   did,
-  patches: [{ op: 'add', path: '/alsoKnownAs', value: ['https://example.com'] }],
+  patches: [{
+    op: 'add',
+    path: '/service/-',
+    value: { id: `${did}#website`, type: 'LinkedDomains', serviceEndpoint: 'https://example.com' },
+  }],
   signer,
 });
 
@@ -21,15 +26,13 @@ const first = await api.updateDid({
 // the signed update as sidecar data, unless you publish it to a CAS.
 console.log(first.txid, first.signedUpdate);
 
-// The next update resolves the DID too, so it needs the earlier signed
-// updates as sidecar data. The resolution must show the version of the
-// first update. With the default minConf (6), the resolution misses an
-// update with fewer than 6 confirmations. Both updates then target the
-// same versionId, and resolution fails with LATE_PUBLISHING_ERROR. Wait
-// for 6 confirmations, or pass minConf: 1.
+// Update 2, at a later time: add a second identifier for the subject. Run
+// it after the first signal has 1 confirmation. The resolution needs the
+// earlier signed updates as sidecar data. minConf: 1 lets it see update 1.
+// With the default (6), update 2 can build on the old version.
 const second = await api.updateDid({
   did,
-  patches: [{ op: 'remove', path: '/alsoKnownAs' }],
+  patches: [{ op: 'add', path: '/alsoKnownAs', value: ['https://social.example/@alice'] }],
   signer,
   resolutionOptions: { sidecar: { updates: [first.signedUpdate] }, minConf: 1 },
 });

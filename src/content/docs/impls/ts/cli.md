@@ -111,18 +111,6 @@ btcr2 resolve -i "$DID" --min-conf 1 \
   -r "$(jq -sc '{sidecar:{updates:.}}' signed-update.json signed-deactivate.json)"
 ```
 
-:::caution[Update only after the previous update counts]
-`update` and `deactivate` resolve the DID first. Resolution ignores a beacon
-signal with fewer than `--min-conf` confirmations (default 6). If the previous
-update is not at that depth, the new update builds on the old version. Both
-updates then target the same `versionId`, and resolution of the DID fails with
-`LATE_PUBLISHING_ERROR`.
-
-Before each write, resolve the DID with every signed update as sidecar data.
-Make sure that `versionId` shows your last update. Wait for 6 confirmations
-(about 1 hour on mainnet, 3 minutes on mutinynet), or pass `--min-conf 1`.
-:::
-
 ## External (x1) identifiers
 
 An `x1` identifier encodes the hash of a genesis document. `genesis build`
