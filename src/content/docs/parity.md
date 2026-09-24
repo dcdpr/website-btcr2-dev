@@ -16,11 +16,7 @@ today. Use it to pick an implementation that fits your stack.
 | **Resolve** — CAS / IPFS | ✅ | ⚠️ | 🚧 | 🚧 |
 | **Update** — Singleton beacon | ✅ | ⚠️ | 🚧 | 🚧 |
 | **Update** — Map / SMT beacon | 🚧 | 🚧 | 🚧 | 🚧 |
-| **Deactivate** | ✅\* | ⚠️ | 🚧 | 🚧 |
-
-\* TS deactivate is implemented as an Update with the well-known
-`{ "op": "add", "path": "/deactivated", "value": true }` patch. A first-class
-`api.btcr2.deactivate()` is not yet wired through.
+| **Deactivate** | ✅ | ⚠️ | 🚧 | 🚧 |
 
 ## Bitcoin networks
 
