@@ -1,20 +1,27 @@
 import { ref, shallowRef, type Ref } from 'vue';
 import type { DidBtcr2Api, HttpExecutor, NetworkName } from '@did-btcr2/api';
 
-// The @did-btcr2 packages are loaded dynamically so Astro SSR never
-// evaluates them at build time; the demos are strictly client-side. The
-// packages themselves are pure JS (no WASM) and run in Node and browsers.
-// The modules are loaded once per page and shared across DemoCard instances.
+// The @did-btcr2/api package is loaded dynamically so Astro SSR never
+// evaluates it at build time; the demos are strictly client-side. The
+// package is pure JS (no WASM) and runs in Node and browsers. It re-exports
+// the keypair, signer, and genesis document helpers that the demos use.
+// The module is loaded once per page and shared across DemoCard instances.
 
 type ApiNamespace = typeof import('@did-btcr2/api');
-type KeypairNamespace = typeof import('@did-btcr2/keypair');
-type CommonNamespace = typeof import('@did-btcr2/common');
 
 export type Btcr2Modules = {
   api: ApiNamespace;
-  keypair: KeypairNamespace;
-  common: CommonNamespace;
 };
+
+/** The networks that the api accepts, in the order the demos list them. */
+export const NETWORKS: readonly NetworkName[] = [
+  'bitcoin',
+  'testnet3',
+  'testnet4',
+  'signet',
+  'mutinynet',
+  'regtest',
+];
 
 type LoaderState =
   | { status: 'idle' }
@@ -27,13 +34,9 @@ let loaderState: LoaderState = { status: 'idle' };
 function loadModules(): Promise<Btcr2Modules> {
   if (loaderState.status === 'ready') return Promise.resolve(loaderState.modules);
   if (loaderState.status === 'loading') return loaderState.promise;
-  const promise = Promise.all([
-    import('@did-btcr2/api'),
-    import('@did-btcr2/keypair'),
-    import('@did-btcr2/common'),
-  ])
-    .then(([api, keypair, common]) => {
-      const modules = { api, keypair, common };
+  const promise = import('@did-btcr2/api')
+    .then((api) => {
+      const modules = { api };
       loaderState = { status: 'ready', modules };
       return modules;
     })
@@ -84,6 +87,8 @@ export type UseDidBtcr2 = {
   modules: Ref<Btcr2Modules | null>;
   /** Create a configured DidBtcr2Api instance for the given network. Caller owns disposal. */
   createApiForNetwork: (network: NetworkName) => DidBtcr2Api;
+  /** The network that a did:btcr2 identifier encodes, or null if it does not decode. */
+  networkOf: (did: string) => NetworkName | null;
 };
 
 export function useDidBtcr2(): UseDidBtcr2 {
@@ -120,5 +125,17 @@ export function useDidBtcr2(): UseDidBtcr2 {
     });
   }
 
-  return { ready, error, load, modules, createApiForNetwork };
+  // The api refuses to resolve or update a DID on a connection for a
+  // different network, so the demos take the network from the DID itself.
+  function networkOf(did: string): NetworkName | null {
+    if (!modules.value || !did.startsWith('did:btcr2:')) return null;
+    try {
+      const { network } = modules.value.api.Identifier.decode(did);
+      return (NETWORKS as readonly string[]).includes(network) ? (network as NetworkName) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return { ready, error, load, modules, createApiForNetwork, networkOf };
 }

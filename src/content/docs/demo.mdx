@@ -7,9 +7,8 @@ import DemoResolve from '../../theme/demos/Resolve.vue';
 import DemoUpdate from '../../theme/demos/Update.vue';
 
 The DID Method specification covers four CRUD operations. The widgets on this page
-exercise the **TypeScript** reference implementation (`@did-btcr2/api`, backed by
-`@did-btcr2/method`, `@did-btcr2/keypair`, and `@did-btcr2/common`) directly in
-your browser via dynamic imports.
+run the **TypeScript** reference implementation (`@did-btcr2/api`) directly in
+your browser.
 
 * [Create](#create): produce a new `did:btcr2` identifier from a public key or a Genesis Document.
 * [Resolve](#resolve): resolve an identifier using Bitcoin beacon signals and optional sidecar data.
@@ -31,9 +30,12 @@ needed. The Create operation accepts either:
 * **`EXTERNAL`**: the SHA-256 hash of a JCS-canonicalized
   [Genesis Document](https://dcdpr.github.io/did-btcr2/terminology.html#genesis-document),
   a DID document written against the placeholder identifier `did:btcr2:_` that must
-  include at least one beacon `service` entry. **Random Inputs** builds a valid one via
-  `GenesisDocument.fromPublicKey(pubkey, network)`. Keep the document: the hash is
-  one-way, so resolving the resulting `x1…` identifier requires it as sidecar data.
+  include at least one beacon `service` entry. **Random Inputs** builds a valid one with
+  `api.btcr2.buildGenesisDocument()`. Keep the document: the hash is one-way, so
+  resolving the resulting `x1…` identifier requires it as sidecar data.
+
+The response also lists the beacon addresses of the new DID. Fund one of them
+before the first Update.
 
 Supported networks: `bitcoin`, `testnet3`, `testnet4`, `signet`, `mutinynet`, `regtest`.
 
@@ -42,30 +44,43 @@ Supported networks: `bitcoin`, `testnet3`, `testnet4`, `signet`, `mutinynet`, `r
 ## Resolve
 
 Resolution drives the [`Resolver`](https://dcdpr.github.io/did-btcr2/operations/resolve.html)
-state machine. The `@did-btcr2/api` facade injects the Bitcoin connection for
-the configured network so beacon signals can be fetched automatically. For
-`did:btcr2:x1…` identifiers the identifier encodes only a hash, so resolution
-also needs the Genesis Document supplied as sidecar data:
-`{ "genesisDocument": … }` (the Create demo's "Sidecar for Resolve" output
-pastes straight in; a bare genesis document is wrapped automatically), plus any
-signed updates, CAS announcements and/or SMT proofs the DID's history requires.
+state machine. The demo connects to the network that the DID encodes, and the
+`@did-btcr2/api` facade gets the beacon signals from it.
+
+Sidecar data is optional:
+
+* A `did:btcr2:x1…` identifier encodes only a hash. Resolution needs the Genesis
+  Document as `{ "genesisDocument": … }`. The "Sidecar for Resolve" output of
+  Create pastes straight in, and the demo wraps a bare genesis document for you.
+* A DID with updates needs the signed updates (and any CAS announcements or SMT
+  proofs), unless a CAS holds them. The "Sidecar for Resolve" output of Update
+  contains them.
+
+Resolution ignores a beacon signal with fewer confirmations than `minConf`. The
+specification default is 6. Set a lower value to see a fresh update sooner.
 
 <DemoResolve client:only="vue" />
 
 ## Update
 
 Updates are applied as [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902)
-documents. `api.updateDid(...)` resolves the current state (unless you provide
-`sourceDocument` + `sourceVersionId`), applies your patches, signs the result
-with the verification method and signing key you supply, and broadcasts via the
-chosen beacon. The response includes the signed update and the signal `txid`.
+documents. `api.updateDid(...)` resolves the current document, applies your
+patches, signs the update with your key, and broadcasts a beacon signal. The
+beacon address must hold a confirmed UTXO: fund it first. If you leave the
+verification method or the beacon empty, the api uses the method that
+publishes your key and the beacon that holds the only spendable UTXO.
+
+The response includes the signed update and the signal `txid`. The "Sidecar for
+Resolve" output adds the signed update to the sidecar data that you gave. Paste
+it into Resolve, or into the next Update.
 
 <DemoUpdate client:only="vue" />
 
 ## Deactivate
 
 Deactivation is an Update with the well-known patch
-`[{ "op": "add", "path": "/deactivated", "value": true }]`. The demo pre-fills
-that patch for you.
+`[{ "op": "add", "path": "/deactivated", "value": true }]`. The demo calls
+`api.deactivateDid(...)`, which adds that patch for you. Deactivation is
+permanent: the api refuses any later update.
 
 <DemoUpdate op="deactivate" client:only="vue" />

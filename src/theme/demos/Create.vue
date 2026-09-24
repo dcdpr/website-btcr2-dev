@@ -2,12 +2,12 @@
 import { ref, computed, watch } from 'vue';
 import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
-import { useDidBtcr2 } from '../composables/useDidBtcr2';
+import { NETWORKS, useDidBtcr2 } from '../composables/useDidBtcr2';
 import { bytesToHex, hexToBytes, isHex } from './hex';
 import { formatError } from './errors';
 import './demo-fields.css';
 
-const networks: readonly NetworkName[] = ['bitcoin', 'testnet3', 'testnet4', 'signet', 'mutinynet', 'regtest'];
+const networks = NETWORKS;
 type Network = NetworkName;
 
 const { ready, modules, createApiForNetwork } = useDidBtcr2();
@@ -15,8 +15,8 @@ const { ready, modules, createApiForNetwork } = useDidBtcr2();
 const selectedNetwork = ref<Network | ''>('');
 const idType = ref<'KEY' | 'EXTERNAL' | ''>('');
 const pubKeyHex = ref('');
-const intermediateDocText = ref('');
-const intermediateDocError = ref<string | null>(null);
+const genesisDocText = ref('');
+const genesisDocError = ref<string | null>(null);
 
 const running = ref(false);
 const response = ref<unknown>(null);
@@ -32,8 +32,8 @@ const isKeyValid = computed(() => {
 
 const isExternalValid = computed(() => {
   if (idType.value !== 'EXTERNAL') return false;
-  const raw = intermediateDocText.value.trim();
-  return !!raw && !intermediateDocError.value;
+  const raw = genesisDocText.value.trim();
+  return !!raw && !genesisDocError.value;
 });
 
 const canRun = computed(
@@ -41,14 +41,14 @@ const canRun = computed(
     !!selectedNetwork.value && !!idType.value && (isKeyValid.value || isExternalValid.value),
 );
 
-watch(intermediateDocText, () => {
-  intermediateDocError.value = null;
-  const raw = intermediateDocText.value.trim();
+watch(genesisDocText, () => {
+  genesisDocError.value = null;
+  const raw = genesisDocText.value.trim();
   if (!raw) return;
   try {
     JSON.parse(raw);
   } catch (e: unknown) {
-    intermediateDocError.value = e instanceof Error ? e.message : 'Invalid JSON';
+    genesisDocError.value = e instanceof Error ? e.message : 'Invalid JSON';
   }
 });
 
@@ -58,25 +58,27 @@ const snippet = computed(() => {
     const hex = pubKeyHex.value || '<compressed-secp256k1-pubkey-hex>';
     return `import { createApi } from '@did-btcr2/api';
 
+// A new DID takes the network of the Bitcoin connection.
 const api = createApi({ btc: { network: '${net}' } });
-const genesisBytes = hexToBytes('${hex}');
-const did = api.createDid('deterministic', genesisBytes, { network: '${net}' });
-console.log(did);`;
+const did = api.createDid('deterministic', hexToBytes('${hex}'));
+// Fund one of these addresses before the first update.
+const beacons = api.btcr2.getBeacons(api.btcr2.getInitialDocument(did));
+console.log({ did, beacons });`;
   }
   if (idType.value === 'EXTERNAL') {
     return `import { createApi } from '@did-btcr2/api';
-import { canonicalHashBytes } from '@did-btcr2/common';
 
 const api = createApi({ btc: { network: '${net}' } });
 // Genesis document: placeholder ids (did:btcr2:_) and at least one beacon
-// service. GenesisDocument.fromPublicKey(pubkey, network) builds a valid one.
-const genesisDocument = ${intermediateDocText.value.trim() || '{ /* genesis document */ }'};
-// EXTERNAL identifiers encode the SHA-256 hash of the canonicalized document.
-const genesisHash = canonicalHashBytes(genesisDocument);
-const did = api.createDid('external', genesisHash, { network: '${net}' });
-// Resolving this DID later needs the same document back via sidecar:
+// service. api.btcr2.buildGenesisDocument({ verificationMethods: [{ publicKey }] })
+// builds a valid one.
+const genesisDocument = ${genesisDocText.value.trim() || '{ /* genesis document */ }'};
+// The api checks the document, hashes it (JCS + SHA-256), and encodes the DID.
+const { did, didDocument } = api.btcr2.createExternalFromDocument(genesisDocument);
+const beacons = api.btcr2.getBeacons(didDocument);
+// Keep the document: resolving this DID needs it back as sidecar data:
 //   api.resolveDid(did, { sidecar: { genesisDocument } })
-console.log(did);`;
+console.log({ did, beacons });`;
   }
   return '// Choose network and idType, then fill the fields to see the call';
 });
@@ -85,10 +87,10 @@ async function randomize() {
   if (!modules.value) return;
   selectedNetwork.value = networks[Math.floor(Math.random() * networks.length)];
   idType.value = Math.random() < 0.5 ? 'KEY' : 'EXTERNAL';
-  const keys = modules.value.keypair.SchnorrKeyPair.generate();
+  const keys = modules.value.api.SchnorrKeyPair.generate();
   if (idType.value === 'KEY') {
     pubKeyHex.value = bytesToHex(keys.publicKey.compressed);
-    intermediateDocText.value = '';
+    genesisDocText.value = '';
   } else {
     pubKeyHex.value = '';
     generateGenesisDoc(keys.publicKey.compressed, selectedNetwork.value as Network);
@@ -102,16 +104,20 @@ let lastGenPubKey: Uint8Array | null = null;
 let lastGenDocText = '';
 
 /**
- * Build the genesis document via the library, not by hand: resolution
- * validates that it uses placeholder ids (did:btcr2:_) AND carries at least
- * one beacon service; docs without a `service` fail with "Invalid service".
+ * Build the genesis document with the library, not by hand. The builder
+ * uses the placeholder id (did:btcr2:_), the two required contexts, and one
+ * Singleton beacon with the P2WPKH address of the key for the network.
  */
 function generateGenesisDoc(pubKey: Uint8Array, network: Network) {
-  if (!modules.value) return;
-  const genesis = modules.value.api.GenesisDocument.fromPublicKey(pubKey, network);
-  lastGenPubKey = pubKey;
-  lastGenDocText = JSON.stringify(genesis, null, 2);
-  intermediateDocText.value = lastGenDocText;
+  const api = createApiForNetwork(network);
+  try {
+    const genesis = api.btcr2.buildGenesisDocument({ verificationMethods: [{ publicKey: pubKey }] });
+    lastGenPubKey = pubKey;
+    lastGenDocText = JSON.stringify(genesis, null, 2);
+    genesisDocText.value = lastGenDocText;
+  } finally {
+    api.dispose();
+  }
 }
 
 watch(selectedNetwork, () => {
@@ -119,7 +125,7 @@ watch(selectedNetwork, () => {
     idType.value === 'EXTERNAL' &&
     selectedNetwork.value &&
     lastGenPubKey &&
-    intermediateDocText.value === lastGenDocText
+    genesisDocText.value === lastGenDocText
   ) {
     generateGenesisDoc(lastGenPubKey, selectedNetwork.value as Network);
   }
@@ -135,19 +141,19 @@ async function run() {
     const api = createApiForNetwork(network);
     try {
       if (idType.value === 'KEY') {
-        const did = api.createDid('deterministic', hexToBytes(pubKeyHex.value), { network });
-        response.value = { did };
+        const did = api.createDid('deterministic', hexToBytes(pubKeyHex.value));
+        const beacons = api.btcr2.getBeacons(api.btcr2.getInitialDocument(did));
+        response.value = { did, beacons };
       } else {
-        const doc = JSON.parse(intermediateDocText.value);
-        // EXTERNAL identifiers encode the 32-byte hash of the canonicalized
-        // document, not the raw document bytes.
-        const genesisHash = modules.value.common.canonicalHashBytes(doc);
-        const did = api.createDid('external', genesisHash, { network });
-        response.value = { did };
+        const genesisDocument = JSON.parse(genesisDocText.value);
+        // The api refuses a document that is not a valid genesis document,
+        // so an edited document cannot mint a DID that never resolves.
+        const { did, didDocument } = api.btcr2.createExternalFromDocument(genesisDocument);
+        response.value = { did, beacons: api.btcr2.getBeacons(didDocument) };
         // The hash is one-way, so resolving this DID requires this exact
         // placeholder-form document back, under the `genesisDocument` sidecar
         // key. Hand the user a ready-to-paste payload for the Resolve demo.
-        resolveSidecar.value = { genesisDocument: doc };
+        resolveSidecar.value = { genesisDocument };
       }
     } finally {
       api.dispose();
@@ -193,7 +199,7 @@ const extra = computed(() =>
         <select class="demo-select" v-model="idType">
           <option value="" disabled>Select id type…</option>
           <option value="KEY">key (deterministic)</option>
-          <option value="EXTERNAL">external (intermediate doc)</option>
+          <option value="EXTERNAL">external (genesis document)</option>
         </select>
       </label>
     </div>
@@ -215,7 +221,7 @@ const extra = computed(() =>
       <span class="demo-label">Genesis Document (JSON, placeholder ids + a beacon service; Random Inputs builds one)</span>
       <textarea
         class="demo-textarea"
-        v-model="intermediateDocText"
+        v-model="genesisDocText"
         rows="10"
         spellcheck="false"
         placeholder="{
@@ -224,8 +230,8 @@ const extra = computed(() =>
   &quot;service&quot;: [{ &quot;type&quot;: &quot;SingletonBeacon&quot;, … }]
 }"
       />
-      <p v-if="intermediateDocText && intermediateDocError" class="demo-error">
-        JSON error: {{ intermediateDocError }}
+      <p v-if="genesisDocText && genesisDocError" class="demo-error">
+        JSON error: {{ genesisDocError }}
       </p>
     </div>
 

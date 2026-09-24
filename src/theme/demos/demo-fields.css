@@ -55,3 +55,9 @@
   color: #ff6b6b;
   font-size: 12px;
 }
+
+.demo-hint {
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  margin: 0;
+}

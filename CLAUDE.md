@@ -28,7 +28,7 @@ Run `pnpm typecheck && pnpm build` before committing. No lockfile is committed (
 - Nav/sidebar/theme config: `astro.config.mjs` (Starlight `sidebar`, `social`, `customCss`).
 
 ### Interactive demos (Vue islands)
-Vue 3 demo components live in `src/theme/` (`components/`, `demos/`, `composables/`) and are mounted in `demo.mdx` as islands with `client:only="vue"`; they never render during SSR. `composables/useDidBtcr2.ts` dynamically imports `@did-btcr2/api`, `@did-btcr2/keypair`, and `@did-btcr2/common` once per page and exposes `createApiForNetwork()`. The packages are pure JS (no WASM). Keep new `@did-btcr2/*` usage behind the composable.
+Vue 3 demo components live in `src/theme/` (`components/`, `demos/`, `composables/`) and are mounted in `demo.mdx` as islands with `client:only="vue"`; they never render during SSR. `composables/useDidBtcr2.ts` dynamically imports `@did-btcr2/api` once per page (the api re-exports `SchnorrKeyPair`, `LocalSigner`, and the genesis helpers) and exposes `createApiForNetwork()` and `networkOf()`. The demos take the network from the DID, because the api refuses a DID on a connection for a different network. The packages are pure JS (no WASM). Keep new `@did-btcr2/*` usage behind the composable.
 
 The components still use `--vp-c-*` CSS variables from their VitePress origin; `src/styles/custom.css` aliases those to Starlight's `--sl-color-*` palette. Don't remove the alias block.
 
