@@ -30,8 +30,9 @@ const beaconId = ref('');
 const sidecarText = ref('');
 const sidecarError = ref<string | null>(null);
 // The update builds on the version that this resolution finds. With the
-// resolution default (6), an update less than 6 blocks after the previous
-// one misses it, and the DID gets two updates for one version.
+// resolution default (6), the resolution misses an update with fewer than
+// 6 confirmations. The new update then targets the same versionId, and
+// resolution of the DID fails with LATE_PUBLISHING_ERROR.
 const minConf = ref(1);
 const signingMaterialHex = ref('');
 
@@ -247,8 +248,8 @@ const extra = computed(() =>
         <input class="demo-input" type="number" min="1" step="1" v-model.number="minConf" />
         <p v-if="!isMinConfValid" class="demo-warn">Must be a whole number, 1 or more.</p>
         <p v-else class="demo-hint">
-          Keep 1. The update builds on the version that the resolution finds. A missed recent
-          update gives two updates for one version.
+          Keep 1. The update builds on the version that the resolution finds. If the
+          resolution misses your last update, the DID stops resolving.
         </p>
       </label>
       <label class="demo-field">

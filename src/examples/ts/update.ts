@@ -22,9 +22,11 @@ const first = await api.updateDid({
 console.log(first.txid, first.signedUpdate);
 
 // The next update resolves the DID too, so it needs the earlier signed
-// updates as sidecar data. Pass minConf: 1. With the default (6), an
-// update less than 6 blocks after the previous one resolves the old
-// version, and the DID gets two updates for one version.
+// updates as sidecar data. The resolution must show the version of the
+// first update. With the default minConf (6), the resolution misses an
+// update with fewer than 6 confirmations. Both updates then target the
+// same versionId, and resolution fails with LATE_PUBLISHING_ERROR. Wait
+// for 6 confirmations, or pass minConf: 1.
 const second = await api.updateDid({
   did,
   patches: [{ op: 'remove', path: '/alsoKnownAs' }],

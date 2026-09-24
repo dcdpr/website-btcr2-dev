@@ -70,9 +70,10 @@ beacon address must hold a confirmed UTXO: fund it first. If you leave the
 verification method or the beacon empty, the api uses the method that
 publishes your key and the beacon that holds the only spendable UTXO.
 
-The form resolves with `minConf` 1: the update must build on the latest
-version. With the resolution default (6), an update less than 6 blocks after
-the previous one misses it, and the DID gets two updates for one version.
+The form resolves with `minConf` 1: the update must build on the version of
+your last update. With the resolution default (6), the resolution misses an
+update with fewer than 6 confirmations. The new update then targets the same
+`versionId`, and resolution of the DID fails with `LATE_PUBLISHING_ERROR`.
 
 The response includes the signed update and the signal `txid`. The "Sidecar for
 Resolve" output adds the signed update to the sidecar data that you gave. Paste
