@@ -1,16 +1,26 @@
-// Resolve a `did:btcr2` identifier. The api injects the configured Bitcoin
-// connection so beacon signals are fetched automatically.
-import { createApi } from '@did-btcr2/api';
+// Resolve a `did:btcr2` identifier. The api reads the beacon signals from
+// the Bitcoin connection, which must be on the network of the DID.
+import { createApi, type Sidecar } from '@did-btcr2/api';
 
-const api = createApi({ btc: { network: 'regtest' } });
+const api = createApi({ btc: { network: 'mutinynet' } });
+const did = 'did:btcr2:k1q5p...'; // your DID
 
-const did =
-  'did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4';
+// Without sidecar data, resolution works for a k1 DID with no updates, and
+// for a DID whose updates are in a CAS. tryResolveDid gives a DID Resolution
+// error code instead of a throw.
+const attempt = await api.tryResolveDid(did);
+if (attempt.ok) console.log(attempt.document, attempt.metadata);
+else console.warn(attempt.error, attempt.errorMessage); // e.g. MISSING_UPDATE_DATA
 
-const result = await api.resolveDid(did);
-console.log(result.didDocument);
+// Sidecar data comes from the DID controller:
+// - An x1 DID needs its genesis document.
+// - A DID with updates needs every signed update, unless a CAS holds them.
+const sidecar: Sidecar = {
+  updates: [/* the signed updates of the DID, in order */],
+};
 
-// For did:btcr2:x1… identifiers, supply sidecar data alongside.
-// const result = await api.resolveDid(did, { sidecar: { initialDocument: {...} } });
-
-api.dispose();
+// minConf (default 6) is the number of confirmations that a beacon signal
+// needs before resolution applies it. A lower value shows an update sooner.
+const result = await api.resolveDid(did, { sidecar, minConf: 1 });
+// didDocumentMetadata: { versionId, confirmations, deactivated, updated? }
+console.log(result.didDocument, result.didDocumentMetadata);

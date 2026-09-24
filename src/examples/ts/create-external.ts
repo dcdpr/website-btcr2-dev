@@ -1,35 +1,24 @@
-// Create a `did:btcr2:x1…` identifier from an intermediate DID document.
-// The placeholder ID is replaced throughout the document by the encoded DID.
-import { createApi } from '@did-btcr2/api';
-import { canonicalHashBytes } from '@did-btcr2/common';
+// Create an external `did:btcr2:x1…` identifier from a genesis document.
+// The identifier encodes the SHA-256 hash of the canonical document.
+import { createApi, SchnorrKeyPair } from '@did-btcr2/api';
 
-const api = createApi({ btc: { network: 'regtest' } });
+const api = createApi({ btc: { network: 'mutinynet' } });
+const keys = SchnorrKeyPair.generate();
 
-const PLACEHOLDER =
-  'did:btcr2:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+// One key with all four verification relationships, and one Singleton
+// beacon at the P2WPKH address of that key. The builder uses the
+// placeholder id `did:btcr2:_` and the two required contexts.
+const genesisDocument = api.btcr2.buildGenesisDocument({
+  verificationMethods: [{ publicKey: keys.publicKey.compressed }],
+});
 
-const intermediateDocument = {
-  '@context': ['https://www.w3.org/TR/did-1.1', 'https://btcr2.dev/context'],
-  id: PLACEHOLDER,
-  controller: [PLACEHOLDER],
-  verificationMethod: [
-    {
-      id: `${PLACEHOLDER}#key-0`,
-      type: 'Multikey',
-      controller: PLACEHOLDER,
-      publicKeyMultibase: 'zQ3shRAtucgse3YhPjptmFaUKAtTyoqaSAkpj3J1UT2jtMcvg',
-    },
-  ],
-  authentication: [`${PLACEHOLDER}#key-0`],
-  assertionMethod: [`${PLACEHOLDER}#key-0`],
-  capabilityInvocation: [`${PLACEHOLDER}#key-0`],
-  capabilityDelegation: [`${PLACEHOLDER}#key-0`],
-};
+// Hash exactly the JSON that you keep: one changed byte gives another DID.
+const json = JSON.stringify(genesisDocument);
+const { did, didDocument } = api.btcr2.createExternalFromDocument(JSON.parse(json));
+const [beacon] = api.btcr2.getBeacons(didDocument);
 
-// EXTERNAL identifiers encode the SHA-256 hash of the canonicalized document.
-const genesisHash = canonicalHashBytes(intermediateDocument);
-const did = api.createDid('external', genesisHash, { network: 'regtest' });
+// Keep `json`. Resolution of an x1 DID needs the genesis document as
+// sidecar data: api.resolveDid(did, { sidecar: { genesisDocument } })
+const report = api.did.validate(did, { genesisDocument: JSON.parse(json) });
 
-console.log({ did });
-
-api.dispose();
+console.log({ did, beacon: beacon.address, valid: report.valid });

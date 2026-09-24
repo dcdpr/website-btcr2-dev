@@ -1,25 +1,21 @@
-// Deactivation is an Update with the well-known patch
+// Deactivate a DID. This is permanent: the api refuses a later update.
+// Deactivation is an update with the patch
 //   [{ op: 'add', path: '/deactivated', value: true }]
-import { createApi } from '@did-btcr2/api';
-import { LocalSigner } from '@did-btcr2/keypair';
+import { createApi, LocalSigner, type SignedBTCR2Update } from '@did-btcr2/api';
 
-const api = createApi({ btc: { network: 'regtest' } });
+const api = createApi({ btc: { network: 'mutinynet' } });
 
-const did =
-  'did:btcr2:k1qgpgwtp2dpe3thqny6jngl5eg6p4wghd04yj70jcp8qe4nh75hd4dhc8f08q4';
+const did = 'did:btcr2:k1q5p...'; // your DID
+const secretKey = new Uint8Array(32); // your 32-byte secp256k1 secret key
+const updates: SignedBTCR2Update[] = [/* every signed update of the DID, in order */];
 
-const secretKeyBytes = new Uint8Array(32); // your 32-byte secp256k1 secret key
-const signer = new LocalSigner(secretKeyBytes);
-
-const result = await api.updateDid({
+const { txid, signedUpdate } = await api.deactivateDid({
   did,
-  patches: [{ op: 'add', path: '/deactivated', value: true }],
-  sourceVersionId: 1,
-  verificationMethodId: `${did}#initialKey`,
-  beaconId: `${did}#initialP2PKH`,
-  signer,
+  signer: new LocalSigner(secretKey),
+  // minConf: 1, so that the deactivation builds on the latest update.
+  resolutionOptions: { sidecar: { updates }, minConf: 1 },
 });
 
-console.log(result.txid);
-
-api.dispose();
+// Add signedUpdate to the sidecar data: a resolver needs it to see the
+// deactivation.
+console.log(txid, signedUpdate);

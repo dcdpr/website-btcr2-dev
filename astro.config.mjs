@@ -27,7 +27,14 @@ export default defineConfig({
             { label: 'Java', link: '/impls/java/' },
             { label: 'Python', link: '/impls/py/' },
             { label: 'Rust', link: '/impls/rs/' },
-            { label: 'TypeScript', link: '/impls/ts/' },
+            {
+              label: 'TypeScript',
+              items: [
+                { label: 'Overview', link: '/impls/ts/' },
+                { label: 'SDK', link: '/impls/ts/sdk/' },
+                { label: 'CLI', link: '/impls/ts/cli/' },
+              ],
+            },
           ],
         },
         { label: 'Cross-impl Parity', link: '/parity/' },

@@ -21,10 +21,10 @@ Run `pnpm typecheck && pnpm build` before committing. No lockfile is committed (
 ## Architecture
 
 ### Content lives in `src/content/docs/`
-- Pages: `index.mdx` (splash home), `spec.md`, `demo.mdx`, `diagrams.md`, `parity.md`, `impls.md`, and `impls/{java,py,rs}.md` + `impls/ts.mdx`.
+- Pages: `index.mdx` (splash home), `spec.md`, `demo.mdx`, `diagrams.md`, `parity.md`, `impls.md`, `impls/{java,py,rs}.md`, and the TypeScript group `impls/ts/{index.mdx,sdk.mdx,cli.md}` (Overview, SDK, CLI).
 - Starlight requires a `title` in every page's frontmatter; do not add an H1 in the body.
 - `.mdx` pages import components explicitly; `.md` pages are plain markdown. MDX does NOT support `<https://url>` autolinks; use `[text](url)`.
-- TS example snippets live in `src/examples/ts/` and are embedded in `impls/ts.mdx` via `?raw` imports + Starlight's `<Code>` component. They are typechecked by `astro check`, so they must be self-contained.
+- TS example snippets live in `src/examples/ts/` and are embedded in `impls/ts/sdk.mdx` via `?raw` imports + Starlight's `<Code>` component. They are typechecked by `astro check`, so they must be self-contained. They import only `@did-btcr2/api`. `astro check` does not typecheck `.vue` files.
 - Nav/sidebar/theme config: `astro.config.mjs` (Starlight `sidebar`, `social`, `customCss`).
 
 ### Interactive demos (Vue islands)
@@ -38,7 +38,7 @@ The components still use `--vp-c-*` CSS variables from their VitePress origin; `
 ### Bitcoin REST and CAS endpoints (CORS-safe executor is REQUIRED)
 All networks use the library's default REST hosts (mempool.space, mutinynet.com, localhost for `regtest`). `createApiForNetwork()` in `src/theme/composables/useDidBtcr2.ts` passes a custom `executor` that removes `Content-Type` from GET requests.
 
-The executor is necessary because `@did-btcr2/bitcoin`'s REST client sends `Content-Type: application/json` on every GET. That header makes the request non-simple. The browser then sends a CORS preflight, and the mempool.space OPTIONS handler answers 404. The executor also sets `cache: 'no-store'`. mutinynet.com sends `max-age=14400` on `/blocks/tip/height`. With a stale tip from the browser HTTP cache, a new beacon signal gets no confirmations, and resolution ignores it. Do not remove the executor until the upstream client stops sending that header and bypasses the HTTP cache. The site has no `/mempool` proxy (Vite or nginx) since v2.1.0. There is no `fetch` monkey-patching and no env-var config; the `@did-btcr2` packages take explicit config objects only (`createApi({ btc: { network, rest, rpc, executor }, cas: { gateway } })`).
+The executor is necessary because `@did-btcr2/bitcoin`'s REST client sends `Content-Type: application/json` on every GET. That header makes the request non-simple. The browser then sends a CORS preflight, and the mempool.space OPTIONS handler answers 404. The executor also sets `cache: 'no-store'` and adds a unique query string to `/blocks/tip/height`. mutinynet.com sends `max-age=14400` on that path, and its Cloudflare cache can serve a tip one block old. With a stale tip, a new beacon signal gets no confirmations, and resolution ignores it. Do not remove the executor until the upstream client stops sending that header and bypasses the HTTP cache. The site has no `/mempool` proxy (Vite or nginx) since v2.1.0. There is no `fetch` monkey-patching and no env-var config; the `@did-btcr2` packages take explicit config objects only (`createApi({ btc: { network, rest, rpc, executor }, cas: { gateway } })`).
 
 The composable also sets `cas.gateway` to `https://trustless-gateway.link`. The library default (`https://ipfs.io`) is in sunset, and its redirect has no CORS header, so browser CAS reads fail on it.
 
@@ -48,5 +48,5 @@ btcr2.dev is served from a company VM with **no automation**. Release flow: bump
 ## Conventions
 
 - License: **MPL-2.0**.
-- Dependency versions track the `did-btcr2-js` monorepo (`@did-btcr2/api` / `keypair` / `common`); the api facade is pre-1.0 and moves fast. When bumping, re-run the demos against a test network.
+- The site depends on `@did-btcr2/api` only; it re-exports the keypair, signer, and genesis helpers. The api is 0.x and moves fast (a caret range pins the minor version). When bumping, re-run the demos against a test network, including a funded Update on mutinynet.
 - The spec itself is **not** in this repo. `src/content/docs/spec.md` only links to `https://dcdpr.github.io/did-btcr2`. Don't try to edit spec content here.

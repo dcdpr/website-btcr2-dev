@@ -1,100 +1,57 @@
 ---
 title: TypeScript
+description: The TypeScript reference implementation of did:btcr2, the @did-btcr2/api SDK, and the btcr2 command-line tool.
 ---
 
-import { Tabs, TabItem, Code } from '@astrojs/starlight/components';
-import createKey from '../../../examples/ts/create-key.ts?raw';
-import createExternal from '../../../examples/ts/create-external.ts?raw';
-import resolveExample from '../../../examples/ts/resolve.ts?raw';
-import updateExample from '../../../examples/ts/update.ts?raw';
-import deactivateExample from '../../../examples/ts/deactivate.ts?raw';
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 The TypeScript reference implementation lives in the
-[`did-btcr2-js` monorepo](https://github.com/dcdpr/did-btcr2-js). The packages
-most relevant to consumers:
+[`did-btcr2-js` monorepo](https://github.com/dcdpr/did-btcr2-js). It is the most
+complete implementation, and the [Demo](/demo/) runs it in your browser.
+
+<CardGrid>
+  <LinkCard
+    title="SDK: @did-btcr2/api"
+    description="Create, resolve, update, and deactivate DIDs from Node.js or a browser app."
+    href="/impls/ts/sdk/"
+  />
+  <LinkCard
+    title="CLI: @did-btcr2/cli"
+    description="The btcr2 command: DIDs, keys, and config from a terminal."
+    href="/impls/ts/cli/"
+  />
+</CardGrid>
+
+:::note[Status]
+The SDK and the CLI are ready to use. The packages are 0.x, so a minor release
+(for example 0.27 to 0.28) can contain breaking changes. Read the changelog of
+the package before a minor bump.
+:::
+
+## Packages
+
+Start with the SDK or the CLI. They include the lower-level packages.
 
 | Package | Purpose |
 |---|---|
-| [`@did-btcr2/method`](https://www.npmjs.com/package/@did-btcr2/method) | Sans-I/O reference implementation of the DID Method (Create / Resolve / Update state machines). |
-| [`@did-btcr2/api`](https://www.npmjs.com/package/@did-btcr2/api) | High-level SDK facade with Bitcoin connection, KMS and CAS wiring. |
-| [`@did-btcr2/keypair`](https://www.npmjs.com/package/@did-btcr2/keypair) | Schnorr/secp256k1 key pairs, Multikey encoding, and the `Signer` interface (`LocalSigner`). |
-| [`@did-btcr2/common`](https://www.npmjs.com/package/@did-btcr2/common) | Shared types plus canonicalization/hash utilities (`canonicalHashBytes`). |
-| [`@did-btcr2/aggregation`](https://www.npmjs.com/package/@did-btcr2/aggregation) | Aggregated-beacon protocol with Nostr and HTTP/REST transports. |
-| [`@did-btcr2/cli`](https://www.npmjs.com/package/@did-btcr2/cli) | Command-line interface. |
+| [`@did-btcr2/api`](https://www.npmjs.com/package/@did-btcr2/api) | The SDK. One facade for the DID operations, the Bitcoin connection, key management, and the CAS. It re-exports the key pair, signer, and genesis document helpers. |
+| [`@did-btcr2/cli`](https://www.npmjs.com/package/@did-btcr2/cli) | The `btcr2` command. It wraps the SDK and adds an encrypted keystore and config profiles. |
+| [`@did-btcr2/method`](https://www.npmjs.com/package/@did-btcr2/method) | The sans-I/O DID Method: identifiers, beacons, and the Resolver and Updater state machines. Use it to customize the protocol. |
+| [`@did-btcr2/aggregation`](https://www.npmjs.com/package/@did-btcr2/aggregation) | Multi-party aggregate beacons (CAS and SMT) with MuSig2, over Nostr or HTTP transports. |
+| [`@did-btcr2/bitcoin`](https://www.npmjs.com/package/@did-btcr2/bitcoin) | Bitcoin Esplora REST and Bitcoin Core RPC clients with a pluggable HTTP executor. |
+| [`@did-btcr2/keypair`](https://www.npmjs.com/package/@did-btcr2/keypair) | secp256k1 key pairs, Multikey encoding, and the `Signer` interface (`LocalSigner`). |
+| [`@did-btcr2/key-manager`](https://www.npmjs.com/package/@did-btcr2/key-manager) | Key management: generate, import, sign, and verify, with URN key ids. |
+| [`@did-btcr2/cryptosuite`](https://www.npmjs.com/package/@did-btcr2/cryptosuite) | The `bip340-jcs-2025` Data Integrity cryptosuite. |
+| [`@did-btcr2/common`](https://www.npmjs.com/package/@did-btcr2/common) | Shared types, errors, JCS canonicalization, and hashing. |
+| [`@did-btcr2/smt`](https://www.npmjs.com/package/@did-btcr2/smt) | The optimized Sparse Merkle Tree of SMT beacons. |
 
-:::note[Status]
-All packages are pre-1.0. APIs may change before stabilization.
-:::
+## Runtime
 
-## Install
-
-```sh
-pnpm add @did-btcr2/api @did-btcr2/keypair @did-btcr2/common
-```
-
-The packages are pure JavaScript (no WASM) and target both Node.js ≥ 22 and
-modern browsers. Each ships a prebuilt browser bundle selected via the
-`browser` condition in `exports`.
-
-## Quickstart
-
-```ts
-import { createApi } from '@did-btcr2/api';
-import { SchnorrKeyPair } from '@did-btcr2/keypair';
-
-const api = createApi({ btc: { network: 'regtest' } });
-
-const keys = SchnorrKeyPair.generate();
-const did = api.createDid('deterministic', keys.publicKey.compressed, {
-  network: 'regtest',
-});
-
-console.log(did); // did:btcr2:k1…
-
-api.dispose();
-```
-
-## Create
-
-`did:btcr2` identifiers can be created entirely offline. Two modes:
-
-* **`deterministic`**: encode a compressed secp256k1 public key.
-* **`external`**: encode the SHA-256 hash of the canonicalized intermediate
-  DID document (`canonicalHashBytes` from `@did-btcr2/common`).
-
-<Tabs>
-  <TabItem label="Deterministic (k1)">
-    <Code code={createKey} lang="ts" title="create-key.ts" />
-  </TabItem>
-  <TabItem label="External (x1)">
-    <Code code={createExternal} lang="ts" title="create-external.ts" />
-  </TabItem>
-</Tabs>
-
-## Resolve
-
-Resolution drives the [`Resolver`](https://dcdpr.github.io/did-btcr2/operations/resolve.html)
-state machine. `api.resolveDid()` injects the configured Bitcoin connection so
-beacon signals are fetched for you.
-
-<Code code={resolveExample} lang="ts" title="resolve.ts" />
-
-## Update
-
-Updates are JSON Patches applied to the current DID document. You supply a
-`Signer` (e.g. `LocalSigner` from `@did-btcr2/keypair`, or a KMS-backed
-signer); the library signs the update with the verification method you
-nominate and broadcasts it through the chosen beacon. The result contains the
-signed update, the signal `txid`, and any per-beacon sidecar artifacts.
-
-<Code code={updateExample} lang="ts" title="update.ts" />
-
-## Deactivate
-
-Deactivation is an Update with the well-known patch
-`[{ op: 'add', path: '/deactivated', value: true }]`.
-
-<Code code={deactivateExample} lang="ts" title="deactivate.ts" />
+* Node.js 22 or newer.
+* Browsers: `@did-btcr2/api`, `@did-btcr2/method`, and `@did-btcr2/aggregation`
+  ship a prebuilt browser bundle through the `browser` export condition. Public
+  endpoints need a small setup: see [Use in a browser](/impls/ts/sdk/#use-in-a-browser).
+* The packages are pure JavaScript (no WASM). Each package ships ESM and CJS.
 
 ## Contributing
 
@@ -108,7 +65,10 @@ git clone https://github.com/dcdpr/did-btcr2-js.git
 cd did-btcr2-js
 pnpm install
 pnpm build
+pnpm build:tests
 pnpm test
 ```
 
-Requires Node.js ≥ 22.
+The contributor docs (architecture and ADRs) are in the
+[`docs/`](https://github.com/dcdpr/did-btcr2-js/tree/main/docs) directory of the
+monorepo. `pnpm docs:build` builds them together with the API reference.

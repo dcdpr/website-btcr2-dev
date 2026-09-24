@@ -1,0 +1,169 @@
+---
+title: 'SDK: @did-btcr2/api'
+description: Create, resolve, update, and deactivate did:btcr2 identifiers with the @did-btcr2/api SDK.
+---
+
+import { Tabs, TabItem, Code } from '@astrojs/starlight/components';
+import createKey from '../../../../examples/ts/create-key.ts?raw';
+import createExternal from '../../../../examples/ts/create-external.ts?raw';
+import resolveExample from '../../../../examples/ts/resolve.ts?raw';
+import updateExample from '../../../../examples/ts/update.ts?raw';
+import deactivateExample from '../../../../examples/ts/deactivate.ts?raw';
+import browserExample from '../../../../examples/ts/browser.ts?raw';
+
+`@did-btcr2/api` is the SDK of the TypeScript implementation. `createApi()`
+returns one facade for the DID operations, the Bitcoin connection, key
+management, and the CAS (content-addressed store). If you want to customize the
+protocol, use [`@did-btcr2/method`](https://www.npmjs.com/package/@did-btcr2/method)
+directly.
+
+## Install
+
+```sh
+npm install @did-btcr2/api
+```
+
+The package re-exports what the examples on this page use: `SchnorrKeyPair`,
+`LocalSigner`, and the genesis document helpers. It needs Node.js 22 or newer,
+or a browser.
+
+## Configure
+
+`createApi(config)` takes explicit config objects. It reads no environment
+variables.
+
+```ts
+import { createApi } from '@did-btcr2/api';
+
+const api = createApi({
+  // The Bitcoin network. Each network has a default REST (Esplora) host.
+  btc: { network: 'mutinynet' },
+  // Optional: the CAS. The default is the read-only gateway https://ipfs.io.
+  cas: { gateway: 'https://trustless-gateway.link' },
+});
+```
+
+| Network | Default REST host |
+|---|---|
+| `bitcoin` | `https://mempool.space/api` |
+| `testnet3` | `https://mempool.space/testnet/api` |
+| `testnet4` | `https://mempool.space/testnet4/api` |
+| `signet` | `https://mempool.space/signet/api` |
+| `mutinynet` | `https://mutinynet.com/api` |
+| `regtest` | `http://localhost:3000` (REST) and `http://localhost:18443` (RPC) |
+
+Other `btc` options:
+
+* `rest: { host, headers }` sets your own Esplora host.
+* `rpc` sets a Bitcoin Core RPC client.
+* `executor` sets your own HTTP client.
+* `timeoutMs` sets a request timeout.
+
+The connection must be on the network of the DID: the api refuses to resolve or
+update a DID from a different network. A new DID takes the network of the
+connection.
+
+`cas: { rpcUrl }` connects a writable CAS (the RPC endpoint of an IPFS node).
+
+## Create
+
+Creation is offline: no chain read and no fee. There are two identifier types:
+
+* **`k1` (deterministic):** the identifier encodes a compressed secp256k1 public
+  key. The initial DID document follows from the key.
+* **`x1` (external):** the identifier encodes the SHA-256 hash of a
+  [Genesis Document](https://dcdpr.github.io/did-btcr2/terminology.html#genesis-document).
+  `api.btcr2.buildGenesisDocument()` builds one from keys, beacons, and
+  services. Keep the document: a resolver needs it as sidecar data.
+
+<Tabs>
+  <TabItem label="Deterministic (k1)">
+    <Code code={createKey} lang="ts" title="create-key.ts" />
+  </TabItem>
+  <TabItem label="External (x1)">
+    <Code code={createExternal} lang="ts" title="create-external.ts" />
+  </TabItem>
+</Tabs>
+
+`api.generateDid()` makes a key, keeps it in the in-process key manager, and
+returns `{ did, keyId }`. `api.kms.signer(keyId)` then gives the signer for
+updates.
+
+## Resolve
+
+Resolution drives the [`Resolver`](https://dcdpr.github.io/did-btcr2/operations/resolve.html)
+state machine. The api reads the beacon signals from Bitcoin and applies each
+update that the sidecar data or the CAS supplies.
+
+<Code code={resolveExample} lang="ts" title="resolve.ts" />
+
+`versionId` and `versionTime` in the resolution options select an earlier
+version of the document.
+
+## Update
+
+An update is a [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902) to the
+DID document. The api signs the update and broadcasts a beacon signal. The
+signal is a Bitcoin transaction with the hash of the update in its `OP_RETURN`
+output, so the beacon address must hold a confirmed UTXO. The initial document
+of a `k1` DID has three beacons, and `api.btcr2.getBeacons()` gives their
+addresses. Fund one of them, and wait for one confirmation.
+
+The signer is any `Signer`: `LocalSigner` for a secret key in memory, or
+`api.kms.signer(keyId)` for a key in the key manager.
+
+<Code code={updateExample} lang="ts" title="update.ts" />
+
+:::caution[Pass `minConf: 1` on every update after the first]
+`updateDid` and `deactivateDid` resolve the DID first, with the resolution
+default of 6 confirmations. An update less than 6 blocks after the previous one
+then builds on the old version, and the DID gets two updates for one version.
+Pass `resolutionOptions: { minConf: 1 }`, and check that the resolution shows the
+latest `versionId` before you update. Some REST hosts cache the chain tip, so
+wait about one minute after a confirmation.
+:::
+
+Every update failure that the specification names is an `UpdateError` of type
+`INVALID_DID_UPDATE`. Examples: a patch that fails to apply, a key that the
+document does not list in `capabilityInvocation`, and a deactivated DID.
+
+### Publish to a CAS
+
+By default, the api publishes nothing (`publishToCas: 'never'`). The controller
+then gives each signed update to the relying parties as sidecar data, and only
+they can see the change. With a writable CAS, `publishToCas: 'auto'` publishes
+the signed update before the broadcast. Any resolver can then get the update
+from the CAS with no sidecar data. `'always'` refuses the update if no writable
+CAS is configured.
+
+```ts
+const api = createApi({
+  btc: { network: 'mutinynet' },
+  cas: { rpcUrl: 'http://127.0.0.1:5001' }, // the RPC endpoint of an IPFS node
+});
+const result = await api.updateDid({ did, patches, signer, publishToCas: 'auto' });
+console.log(result.publishedToCas); // { update: true, announcement: false }
+```
+
+## Deactivate
+
+Deactivation is an update with the patch
+`[{ "op": "add", "path": "/deactivated", "value": true }]`.
+`api.deactivateDid()` adds the patch for you. Deactivation is permanent.
+
+<Code code={deactivateExample} lang="ts" title="deactivate.ts" />
+
+## Use in a browser
+
+The browser bundle needs a small setup for public endpoints. The executor below
+removes a header that causes a CORS failure on mempool.space, and it keeps chain
+state out of the browser HTTP cache. The [Demo](/demo/) uses the same setup.
+
+<Code code={browserExample} lang="ts" title="browser.ts" />
+
+## Reference
+
+* [`@did-btcr2/api` README](https://github.com/dcdpr/did-btcr2-js/tree/main/packages/api):
+  all exports, the fluent `UpdateBuilder`, and the write-path rules.
+* [`@did-btcr2/api` on npm](https://www.npmjs.com/package/@did-btcr2/api) and its
+  [changelog](https://github.com/dcdpr/did-btcr2-js/blob/main/packages/api/CHANGELOG.md).
