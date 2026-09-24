@@ -67,11 +67,13 @@ const corsSafeExecutor: HttpExecutor = (req) => {
   }
   // The api ignores `timeoutMs` when a custom executor is set, so the
   // executor sets its own timeout.
-  // Chain state must never come from the browser HTTP cache. For example,
-  // mutinynet.com sends `max-age=14400` on /blocks/tip/height. With a
-  // stale tip, a new beacon signal gets no confirmations, and resolution
-  // ignores it. Node's fetch has no HTTP cache, so only browsers need this.
-  return fetch(req.url, {
+  // Chain state must never come from a cache. mutinynet.com sends
+  // `max-age=14400` on /blocks/tip/height, and its CDN serves a tip that
+  // can be one block old. With a stale tip, a new beacon signal gets no
+  // confirmations, and resolution ignores it. `no-store` skips the browser
+  // cache, and a unique query string skips the CDN cache.
+  const url = req.url.endsWith('/blocks/tip/height') ? `${req.url}?_=${Date.now()}` : req.url;
+  return fetch(url, {
     method: req.method,
     headers,
     body: req.body,

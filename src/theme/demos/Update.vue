@@ -29,7 +29,10 @@ const verificationMethodId = ref('');
 const beaconId = ref('');
 const sidecarText = ref('');
 const sidecarError = ref<string | null>(null);
-const minConf = ref(6);
+// The update builds on the version that this resolution finds. With the
+// resolution default (6), an update less than 6 blocks after the previous
+// one misses it, and the DID gets two updates for one version.
+const minConf = ref(1);
 const signingMaterialHex = ref('');
 
 const running = ref(false);
@@ -90,7 +93,7 @@ const snippet = computed(() => {
   ];
   const resolution = [
     ...(sidecar ? [`sidecar: ${JSON.stringify(sidecar)}`] : []),
-    ...(minConf.value !== 6 ? [`minConf: ${minConf.value}`] : []),
+    `minConf: ${minConf.value}`,
   ];
   if (resolution.length) lines.push(`  resolutionOptions: { ${resolution.join(', ')} },`);
   const call = props.op === 'deactivate' ? 'deactivateDid' : 'updateDid';
@@ -243,6 +246,10 @@ const extra = computed(() =>
         <span class="demo-label">Minimum confirmations (minConf)</span>
         <input class="demo-input" type="number" min="1" step="1" v-model.number="minConf" />
         <p v-if="!isMinConfValid" class="demo-warn">Must be a whole number, 1 or more.</p>
+        <p v-else class="demo-hint">
+          Keep 1. The update builds on the version that the resolution finds. A missed recent
+          update gives two updates for one version.
+        </p>
       </label>
       <label class="demo-field">
         <span class="demo-label">Signing secret key (hex, 32 bytes)</span>
