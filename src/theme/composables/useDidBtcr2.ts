@@ -1,7 +1,7 @@
 import { ref, shallowRef, type Ref } from 'vue';
-import type { DidBtcr2Api, NetworkName } from '@did-btcr2/api';
+import type { DidBtcr2Api, HttpExecutor, NetworkName } from '@did-btcr2/api';
 
-// The @did-btcr2 packages are loaded dynamically so VitePress SSR never
+// The @did-btcr2 packages are loaded dynamically so Astro SSR never
 // evaluates them at build time; the demos are strictly client-side. The
 // packages themselves are pure JS (no WASM) and run in Node and browsers.
 // The modules are loaded once per page and shared across DemoCard instances.
@@ -45,19 +45,37 @@ function loadModules(): Promise<Btcr2Modules> {
   return promise;
 }
 
-// mempool.space networks MUST go through the site's same-origin /mempool
-// proxy (Vite dev proxy in dev, the VM's nginx `location /mempool/` block in
-// prod). Direct browser calls fail CORS: the @did-btcr2/bitcoin REST client
-// sends `Content-Type: application/json` on GETs, which triggers a preflight
-// that mempool.space's OPTIONS handler rejects (404). mutinynet.com handles
-// preflight correctly (ACAO:* + OPTIONS 204) so it stays direct; regtest
-// keeps the library's localhost default.
-const MEMPOOL_REST_HOSTS: Partial<Record<NetworkName, string>> = {
-  bitcoin: '/mempool/api',
-  testnet3: '/mempool/testnet/api',
-  testnet4: '/mempool/testnet4/api',
-  signet: '/mempool/signet/api',
+// The @did-btcr2/bitcoin REST client sends `Content-Type: application/json`
+// on every GET. A GET has no body, so the header has no function, but it makes
+// the request non-simple. The browser then sends a CORS preflight, and the
+// mempool.space OPTIONS handler answers 404. This executor removes the header
+// from GET requests, so the browser sends no preflight. POST /tx uses
+// `text/plain`, which is CORS-safelisted. With this executor, all networks
+// use the library's default REST hosts, and the site needs no proxy.
+// Remove it when upstream stops sending the header on GET.
+const REQUEST_TIMEOUT_MS = 30_000;
+
+const corsSafeExecutor: HttpExecutor = (req) => {
+  const headers = { ...req.headers };
+  if (req.method === 'GET') {
+    for (const name of Object.keys(headers)) {
+      if (name.toLowerCase() === 'content-type') delete headers[name];
+    }
+  }
+  // The api ignores `timeoutMs` when a custom executor is set, so the
+  // executor sets its own timeout.
+  return fetch(req.url, {
+    method: req.method,
+    headers,
+    body: req.body,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
 };
+
+// The library default CAS gateway (ipfs.io) is in sunset. Its redirect to
+// trustless-gateway.link has no CORS header, so browser CAS reads fail.
+// Read CAS content from the trustless gateway directly.
+const CAS_GATEWAY = 'https://trustless-gateway.link';
 
 export type UseDidBtcr2 = {
   ready: Ref<boolean>;
@@ -96,9 +114,9 @@ export function useDidBtcr2(): UseDidBtcr2 {
     if (!modules.value) {
       throw new Error('@did-btcr2 modules not loaded yet - await load() first');
     }
-    const host = MEMPOOL_REST_HOSTS[network];
     return modules.value.api.createApi({
-      btc: host ? { network, rest: { host } } : { network },
+      btc: { network, executor: corsSafeExecutor },
+      cas: { gateway: CAS_GATEWAY },
     });
   }
 

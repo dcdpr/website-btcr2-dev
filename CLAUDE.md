@@ -35,15 +35,15 @@ The components still use `--vp-c-*` CSS variables from their VitePress origin; `
 ### Mermaid diagrams
 ```` ```mermaid ```` fences render client-side via the `astro-mermaid` integration (registered BEFORE `starlight` in `astro.config.mjs`; order matters). Theme switching is automatic. Diagram sources live inline in the markdown pages; standalone OKR sources are kept in `public/diagrams/okrs/`.
 
-### Bitcoin REST endpoints (same-origin /mempool proxy is REQUIRED)
-mempool.space networks (`bitcoin`, `testnet3`, `testnet4`, `signet`) are routed through the site's **same-origin `/mempool` path** via `createApiForNetwork()` in `src/theme/composables/useDidBtcr2.ts`:
-- Dev: the `vite.server.proxy` block in `astro.config.mjs`.
-- Prod: the VM's nginx `location /mempool/ { proxy_pass https://mempool.space/; }` block (added via helpdesk issue #25; not in this repo).
+### Bitcoin REST and CAS endpoints (CORS-safe executor is REQUIRED)
+All networks use the library's default REST hosts (mempool.space, mutinynet.com, localhost for `regtest`). `createApiForNetwork()` in `src/theme/composables/useDidBtcr2.ts` passes a custom `executor` that removes `Content-Type` from GET requests.
 
-Direct browser calls to mempool.space FAIL: `@did-btcr2/bitcoin`'s REST client sends `Content-Type: application/json` on GETs, making them non-simple requests, and mempool.space's OPTIONS handler 404s the resulting preflight. Do not "simplify" this back to direct calls unless the upstream client stops sending that header. `mutinynet.com` handles preflight correctly and stays direct; `regtest` uses the library's localhost default. There is no `fetch` monkey-patching and no env-var config; the `@did-btcr2` packages take explicit config objects only (`createApi({ btc: { network, rest, rpc, executor } })`).
+The executor is necessary because `@did-btcr2/bitcoin`'s REST client sends `Content-Type: application/json` on every GET. That header makes the request non-simple. The browser then sends a CORS preflight, and the mempool.space OPTIONS handler answers 404. Do not remove the executor until the upstream client stops sending that header. The site has no `/mempool` proxy (Vite or nginx) since v2.1.0. There is no `fetch` monkey-patching and no env-var config; the `@did-btcr2` packages take explicit config objects only (`createApi({ btc: { network, rest, rpc, executor }, cas: { gateway } })`).
+
+The composable also sets `cas.gateway` to `https://trustless-gateway.link`. The library default (`https://ipfs.io`) is in sunset, and its redirect has no CORS header, so browser CAS reads fail on it.
 
 ### Deployment
-btcr2.dev is served from a company VM with **no automation**. Release flow: bump `Version:` in `rpm/btcr2-dev.spec` (+ changelog) and `package.json`, push to the GitLab upstream (`gl1.dcdpr.com:website/btcr2-dev.git`), tag `vX.Y.Z`, then file an issue on the internal helpdesk GitLab; third-party IT clones the GitLab repo at the tag, builds an RPM (`rpmbuild -ta`, spec runs `npm install && npm run build` and installs `dist/*` to `/var/www/btcr2-dev`), and installs it. nginx serves the site and must keep the `/mempool` proxy block. The GitHub Actions workflow in `.github/workflows/ci.yml` only verifies typecheck+build (weekly cron catches upstream `@did-btcr2` breakage, since no lockfile is committed); it does not deploy.
+btcr2.dev is served from a company VM with **no automation**. Release flow: bump `Version:` in `rpm/btcr2-dev.spec` (+ changelog) and `package.json`, push to the GitLab upstream (`gl1.dcdpr.com:website/btcr2-dev.git`), tag `vX.Y.Z`, then file an issue on the internal helpdesk GitLab; third-party IT clones the GitLab repo at the tag, builds an RPM (`rpmbuild -ta`, spec runs `npm install && npm run build` and installs `dist/*` to `/var/www/btcr2-dev`), and installs it. nginx serves the site as static files. The GitHub Actions workflow in `.github/workflows/ci.yml` only verifies typecheck+build (weekly cron catches upstream `@did-btcr2` breakage, since no lockfile is committed); it does not deploy.
 
 ## Conventions
 

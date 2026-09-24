@@ -21,8 +21,8 @@
   "dependencies": {
     "@astrojs/starlight": "^0.41.3",
     "@astrojs/vue": "^7.0.1",
-    "@did-btcr2/api": "^0.17.0",
-    "@did-btcr2/common": "^9.1.0",
+    "@did-btcr2/api": "^0.27.2",
+    "@did-btcr2/common": "^9.7.0",
     "@did-btcr2/keypair": "^0.13.1",
     "astro": "^7.1.1",
     "astro-mermaid": "^2.1.0",
