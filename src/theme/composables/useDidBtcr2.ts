@@ -23,6 +23,13 @@ export const NETWORKS: readonly NetworkName[] = [
   'regtest',
 ];
 
+/**
+ * The networks on which the demos create and update DIDs. Mainnet is not in
+ * the list: the page must not handle keys that control real funds. Resolve
+ * is read-only, so it also accepts a mainnet DID.
+ */
+export const TEST_NETWORKS: readonly NetworkName[] = NETWORKS.filter((n) => n !== 'bitcoin');
+
 type LoaderState =
   | { status: 'idle' }
   | { status: 'loading'; promise: Promise<Btcr2Modules> }

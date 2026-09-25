@@ -82,8 +82,10 @@ function replacer(_key: string, value: unknown): unknown {
 
       <div class="response-wrap">
         <h4 class="sep">Response</h4>
-        <CopyButton :text="responseText" label="Copy response" />
-        <pre class="out hljs" :class="{ prose: typeof props.response === 'string' }">{{ responseText || (props.running ? '' : '—') }}</pre>
+        <slot name="response">
+          <CopyButton :text="responseText" label="Copy response" />
+          <pre class="out hljs" :class="{ prose: typeof props.response === 'string' }">{{ responseText || (props.running ? '' : '—') }}</pre>
+        </slot>
       </div>
 
       <div v-if="props.extra" class="extra-wrap">

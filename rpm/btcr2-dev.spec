@@ -66,6 +66,8 @@ fi
   Beacons, with the risk of each choice.
 - Demo: align the buttons and the form fields. The code preview and the
   JSON output do not wrap lines.
+- Demo: add a Key Pair demo before Create. Random Inputs in Create uses
+  its key pair. Create, Update, and Deactivate support test networks only.
 
 * Thu Sep 24 2026 jintekc <github@jintek.consulting> - 2.1.0-1
 - Move the demos and the TypeScript docs to @did-btcr2/api 0.27.

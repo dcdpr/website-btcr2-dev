@@ -2,12 +2,13 @@
 import { ref, computed, watch } from 'vue';
 import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
-import { NETWORKS, useDidBtcr2 } from '../composables/useDidBtcr2';
-import { bytesToHex, hexToBytes, isHex } from './hex';
+import { TEST_NETWORKS, useDidBtcr2 } from '../composables/useDidBtcr2';
+import { hexToBytes, isHex } from './hex';
+import { demoKeyPair, generateDemoKeyPair } from './key-pair';
 import { formatError } from './errors';
 import './demo-fields.css';
 
-const networks = NETWORKS;
+const networks = TEST_NETWORKS;
 type Network = NetworkName;
 
 const { ready, modules, createApiForNetwork } = useDidBtcr2();
@@ -87,13 +88,15 @@ async function randomize() {
   if (!modules.value) return;
   selectedNetwork.value = networks[Math.floor(Math.random() * networks.length)];
   idType.value = Math.random() < 0.5 ? 'KEY' : 'EXTERNAL';
-  const keys = modules.value.api.SchnorrKeyPair.generate();
+  // Use the key pair of the Key Pair demo, so the user has the secret key
+  // that updates the new DID.
+  const keys = demoKeyPair.value ?? generateDemoKeyPair(modules.value);
   if (idType.value === 'KEY') {
-    pubKeyHex.value = bytesToHex(keys.publicKey.compressed);
+    pubKeyHex.value = keys.publicKey;
     genesisDocText.value = '';
   } else {
     pubKeyHex.value = '';
-    generateGenesisDoc(keys.publicKey.compressed, selectedNetwork.value as Network);
+    generateGenesisDoc(hexToBytes(keys.publicKey), selectedNetwork.value as Network);
   }
 }
 

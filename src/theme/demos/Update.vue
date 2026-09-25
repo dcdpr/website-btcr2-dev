@@ -37,6 +37,9 @@ const response = ref<unknown>(null);
 const nextSidecar = ref<unknown>(null);
 
 const network = computed(() => (ready.value ? networkOf(did.value) : null));
+// The demo does not broadcast on mainnet: the page must not handle keys that
+// control real funds.
+const isMainnet = computed(() => network.value === 'bitcoin');
 const isMinConfValid = computed(() => Number.isInteger(minConf.value) && minConf.value >= 1);
 
 watch(patchesText, () => {
@@ -72,6 +75,7 @@ const isSigningKeyValid = computed(() => {
 const canRun = computed(
   () =>
     !!network.value &&
+    !isMainnet.value &&
     (props.op === 'deactivate' || (!!patchesText.value.trim() && !patchesError.value)) &&
     !sidecarError.value &&
     isMinConfValid.value &&
@@ -183,6 +187,9 @@ const extra = computed(() =>
       />
       <p v-if="did && ready && !network" class="demo-warn">
         Not a valid did:btcr2 identifier.
+      </p>
+      <p v-else-if="isMainnet" class="demo-warn">
+        This demo does not broadcast on mainnet (bitcoin). Use a DID on a test network.
       </p>
       <p v-else-if="network" class="demo-hint">Network (from the DID): {{ network }}</p>
     </div>
