@@ -20,6 +20,7 @@ sequenceDiagram
     Note over Stu,AS: 0. Setup, one time: join an SMT Aggregation Cohort
     Stu->>AS: Enroll: didIndex = SHA256(did), Schnorr public key
     AS->>Stu: n-of-n P2TR Beacon Address and the n public keys
+    Note over Stu,AS: Each Beacon Signal spends a UTXO of the n-of-n Beacon Address.<br/>The specification does not say which party funds it.
     Stu->>Stu: Compute the address again. Make sure that it contains Stuart's key.
     Stu->>BTC: Update the DID to add an SMTBeacon service<br/>(announced through the Singleton Beacon)
     end

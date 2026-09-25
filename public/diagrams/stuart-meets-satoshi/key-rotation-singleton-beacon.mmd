@@ -26,6 +26,7 @@ sequenceDiagram
     rect rgba(128, 128, 128, 0.08)
     Note over Stu,BTC: 2. Announce through the Singleton Beacon
     Stu->>Stu: Signal Bytes = SHA256(JCS(BTCR2 Signed Update))
+    Note over Stu,BTC: The Beacon Address must hold a UTXO (funded at setup).<br/>Send the change to the new Beacon Address for the next Beacon Signal.
     Stu->>Stu: Build the Beacon Signal: spend a UTXO of the Beacon Address,<br/>last output OP_RETURN Signal Bytes. Sign with the Beacon Address key.
     Stu->>BTC: Broadcast the Beacon Signal
     BTC-->>Stu: minConf (6) confirmations

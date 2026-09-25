@@ -1,0 +1,82 @@
+---
+title: Stuart meets Satoshi - architecture (logical components and interfaces)
+---
+
+%% The components are logical responsibilities, not libraries.
+%% Each application can put them in one process or split them.
+%% Solid arrows: calls. Dashed arrows: off-chain data.
+
+flowchart TB
+    subgraph StuartApp["Stuart's application (DID controller and Aggregation Participant)"]
+      direction TB
+      SChannel["Channel client<br/>(send messages, Sidecar Data)"]
+      SOps["DID operations<br/>Create, Update, Deactivate<br/>(BTCR2 Unsigned and Signed Update)"]
+      Signer["Signer<br/>BIP340 Schnorr<br/>(external signer RECOMMENDED)"]
+      SResolver["Resolver<br/>(fresh versionId before each update)"]
+      Wallet["Bitcoin wallet<br/>UTXOs of the Beacon Address,<br/>fee, Beacon Signal, broadcast"]
+      AggClient["Aggregation client<br/>enroll, respond, validate,<br/>MuSig2 partial signature"]
+      Store[("Update data store<br/>Genesis Document, updates,<br/>CAS Announcements, SMT Proofs, nonces<br/>(life of the DID)")]
+      SidecarBuilder["Sidecar Data builder"]
+    end
+
+    subgraph AggService["Aggregation Service"]
+      direction TB
+      Cohort["Cohort manager<br/>define, advertise, enroll"]
+      MuSig["MuSig2 coordinator<br/>n-of-n P2TR Beacon Address,<br/>nonce and signature aggregation"]
+      SignalBuilder["Signal builder<br/>CAS Announcement, or optimized SMT<br/>and SMT Proofs, Unsigned Beacon Signal"]
+    end
+
+    subgraph SatoshiApp["Satoshi's application (relying party)"]
+      direction TB
+      TChannel["Channel client<br/>(receive messages, Sidecar Data)"]
+      Trust[("Trust store<br/>trusted keys and version of each peer")]
+      subgraph Resolver["Resolver"]
+        direction TB
+        Decode["DID decoder<br/>(Bech32m, network, Genesis Bytes)"]
+        SidecarProc["Sidecar Data processor<br/>(lookup tables by hash)"]
+        BeaconProc["Beacon processors<br/>Singleton, CAS, SMT<br/>(SMT Proof Verification)"]
+        UpdateProc["Update processor<br/>hashes, JSON Patch,<br/>bip340-jcs-2025 proof check"]
+      end
+    end
+
+    BTCNet[("Bitcoin network<br/>(broadcast)")]
+    Indexer[("Bitcoin indexer<br/>(for example Esplora or electrs)")]
+    CAS[("CAS / IPFS")]
+    Transport[("Messaging transport<br/>(p2p channel)")]
+    Advert[("Cohort advertisement<br/>(for example Nostr or DIDComm)")]
+
+    %% Stuart's application
+    SOps -->|"sign"| Signer
+    SOps -->|"resolve own DID"| SResolver
+    SResolver -->|"Beacon Signals"| Indexer
+    SOps -->|"Singleton Beacon: Signal Bytes"| Wallet
+    SOps -->|"CAS or SMT Beacon: update hash"| AggClient
+    AggClient -->|"sign Beacon Signal"| Signer
+    SOps --> Store
+    AggClient --> Store
+    Store --> SidecarBuilder
+    SidecarBuilder --> SChannel
+    Wallet -->|"Beacon Signal"| BTCNet
+    Wallet -->|"confirmations"| Indexer
+    Store -.->|"publish (optional)"| CAS
+
+    %% Aggregation Service
+    Cohort -.->|"advertise"| Advert
+    AggClient <-->|"enrollment, responses,<br/>confirmation requests,<br/>partial signatures"| Cohort
+    Cohort --> MuSig
+    Cohort --> SignalBuilder
+    MuSig -->|"aggregated Beacon Signal"| BTCNet
+
+    %% Channel
+    SChannel -.->|"message, did, Sidecar Data"| Transport
+    Transport -.-> TChannel
+
+    %% Satoshi's application
+    TChannel -->|"resolve(did, sidecar)"| Decode
+    Decode --> SidecarProc
+    SidecarProc --> BeaconProc
+    BeaconProc -->|"find Beacon Signals"| Indexer
+    BeaconProc -.->|"get documents by hash"| CAS
+    BeaconProc --> UpdateProc
+    UpdateProc -->|"didDocument, metadata"| Trust
+    TChannel -->|"check the message key"| Trust
