@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        2.1.0
+Version:        2.2.0
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -55,6 +55,12 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
+* Fri Sep 25 2026 jintekc <github@jintek.consulting> - 2.2.0-1
+- Align the diagrams with the current did:btcr2 specification terms and
+  algorithms. Split the Diagrams page into six pages and add new diagrams.
+- Rework the Stuart-meets-Satoshi use case diagrams and rename them.
+  Add architecture, first contact, and data flow diagrams.
+
 * Thu Sep 24 2026 jintekc <github@jintek.consulting> - 2.1.0-1
 - Move the demos and the TypeScript docs to @did-btcr2/api 0.27.
 - The demos call the Bitcoin REST hosts directly. The site needs no
