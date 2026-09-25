@@ -1,0 +1,28 @@
+---
+title: Data movement with an SMT Beacon
+config:
+  sequence:
+    actorMargin: 20
+    width: 110
+---
+
+%% Each message shows the icons of the data that moves. The page has the legend:
+%% 🔑 public key · 🧾 BTCR2 Signed Update · 🔖 32-byte hash · 🌲 SMT Proof · 📝 Unsigned Beacon Signal
+%% ✍ signature · ⛓ Beacon Signal · 🏷 Beacon Address · 🆔 did · 💬 channel message · 🧳 Sidecar Data · 📄 DID document
+
+sequenceDiagram
+    autonumber
+    actor Stu as Stuart
+    participant AS as Aggregation<br/>Service 🤝
+    participant BTC as Bitcoin ⛓
+    actor Sat as Satoshi
+
+    Stu->>Stu: 🔑 → 🧾 → 🔖
+    Stu->>AS: 🔖 leaf value
+    AS->>Stu: 🌲 SMT Proof, 📝
+    Stu->>AS: ✍ signature
+    AS->>BTC: ⛓ 🌲 SMT root
+    Stu->>Sat: 💬 🆔 🧳 (🧾 🌲)
+    Sat->>BTC: 🏷 Beacon Addresses
+    BTC-->>Sat: ⛓ Beacon Signals
+    Sat->>Sat: 📄 with the new 🔑

@@ -1,0 +1,26 @@
+---
+title: States of the Aggregation Service
+---
+
+%% CAS Beacon and SMT Beacon cohorts. The service sees hashes only.
+
+stateDiagram-v2
+    state "Enroll participants" as Enroll
+    state "Ready" as Ready
+    state "Collect responses" as Collect
+    state "Send the entries for checks" as Build
+    state "Collect signatures" as Sign
+    state "Broadcast the Beacon Signal" as Broadcast
+    state "Round failed" as Failed
+
+    [*] --> Enroll: advertise the cohort
+    Enroll --> Ready: Beacon Address computed
+    Ready --> Collect: round starts
+    Collect --> Build: all n responses
+    Collect --> Failed: a participant does not respond
+    Build --> Sign
+    Sign --> Broadcast: n signatures, or k with a fallback
+    Sign --> Failed: too few signatures
+    Broadcast --> Ready
+    Failed --> Ready
+    Ready --> [*]: cohort closed

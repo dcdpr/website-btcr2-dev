@@ -1,0 +1,31 @@
+---
+title: Stuart meets Satoshi - architecture
+---
+
+%% The components are logical responsibilities, not libraries.
+%% Solid arrows: calls and on-chain data. Dashed arrows: off-chain data.
+
+flowchart TD
+    subgraph StuartApp["Stuart's application"]
+      Ops["DID operations<br/>and signer"]
+      Wallet["Bitcoin wallet"]
+      Store[("Update data")]
+    end
+    Agg["Aggregation Service"]
+    BTC[("Bitcoin")]
+    CAS[("CAS / IPFS")]
+    subgraph SatoshiApp["Satoshi's application"]
+      Resolver["Resolver"]
+      Trust[("Trusted keys")]
+    end
+
+    Ops --> Store
+    Ops -->|"Singleton Beacon"| Wallet
+    Ops -->|"CAS or SMT Beacon"| Agg
+    Wallet --> BTC
+    Agg --> BTC
+    Store -.->|"optional"| CAS
+    Store -.->|"Sidecar Data"| Resolver
+    CAS -.-> Resolver
+    BTC --> Resolver
+    Resolver --> Trust

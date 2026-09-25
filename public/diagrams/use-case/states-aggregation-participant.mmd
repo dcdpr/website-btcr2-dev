@@ -1,0 +1,25 @@
+---
+title: States of an Aggregation Participant (Stuart)
+---
+
+%% CAS Beacon and SMT Beacon cohorts. Signature: all n (n-of-n), or k of n (k-of-n fallback).
+
+stateDiagram-v2
+    state "Wait for a round" as Wait
+    state "Send an update or no update" as Respond
+    state "Check own entry" as Check
+    state "Sign" as Sign
+    state "Refuse to sign" as Refuse
+    state "Keep the round data" as Keep
+    state "DID invalid" as Invalid
+
+    [*] --> Wait: enrolled, Beacon Address checked
+    Wait --> Respond: round starts
+    Respond --> Check: entry from the service
+    Check --> Sign: entry correct
+    Check --> Refuse: entry wrong
+    Sign --> Keep: Beacon Signal broadcast
+    Keep --> Wait
+    Refuse --> Wait: round fails
+    Refuse --> Invalid: k-of-n signal with the wrong entry
+    Wait --> [*]: leave the cohort

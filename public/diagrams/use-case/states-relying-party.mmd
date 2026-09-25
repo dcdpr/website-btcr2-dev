@@ -1,0 +1,20 @@
+---
+title: States of the relying party (Satoshi)
+---
+
+stateDiagram-v2
+    state "No trusted key" as Unknown
+    state "Resolve the DID" as Resolving
+    state "Trusted: version N" as Trusted
+    state "Rejected" as Rejected
+    state "Closed: DID deactivated" as Closed
+
+    [*] --> Unknown
+    Unknown --> Resolving: first contact
+    Trusted --> Resolving: message with an unknown key
+    Resolving --> Trusted: key in the DID document
+    Resolving --> Resolving: data missing, ask Stuart
+    Resolving --> Rejected: invalid DID or key
+    Rejected --> Trusted: keep the last trusted keys
+    Resolving --> Closed: deactivated
+    Closed --> [*]

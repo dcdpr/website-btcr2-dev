@@ -28,12 +28,12 @@ export default defineConfig({
             { label: 'Beacons', link: '/diagrams/beacons/' },
             { label: 'Data', link: '/diagrams/data/' },
             {
-              label: 'Use case: Stuart meets Satoshi',
+              label: 'Use Case',
               items: [
-                { label: 'Overview', link: '/diagrams/stuart-meets-satoshi/' },
-                { label: 'Key rotation', link: '/diagrams/stuart-meets-satoshi/key-rotation/' },
-                { label: 'State machines', link: '/diagrams/stuart-meets-satoshi/states/' },
-                { label: 'Data', link: '/diagrams/stuart-meets-satoshi/data/' },
+                { label: 'Overview', link: '/diagrams/use-case/' },
+                { label: 'Key rotation', link: '/diagrams/use-case/key-rotation/' },
+                { label: 'State machines', link: '/diagrams/use-case/states/' },
+                { label: 'Data', link: '/diagrams/use-case/data/' },
               ],
             },
           ],

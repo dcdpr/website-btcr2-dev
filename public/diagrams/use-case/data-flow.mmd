@@ -1,0 +1,59 @@
+---
+title: Data flow - SMT Beacon, one leaf for each Beacon Signal
+config:
+  flowchart:
+    nodeSpacing: 20
+    rankSpacing: 30
+---
+
+%% Technical version of the hand sketch "btcr2 data flow visualization".
+%% Sketch element → diagram element:
+%%   smiley at the left → Stuart; smiley with a top hat at the right → Satoshi
+%%   "Agg" with three small faces → Aggregation Service
+%%   cloud with a tree, "search by did", "Map" → SMT: the leaf index of a DID is hash(did)
+%%   "k/n", "signed? yes" → the cohort signs: all n (n-of-n), or k of n (k-of-n fallback)
+%%   tower → SMT Beacon
+%%   "Sidecar" stack → Sidecar Data
+%%   bar with cells and dots → Bitcoin blocks with Beacon Signals
+%%   "Q", "inclusion, non-inclusion, gibberish", tall box with 3 parts → the 3 states of the leaf of Stuart
+%%   faces under the bar → the leaf state for each Beacon Signal
+%%   stars, papers, "K1" → the update of Stuart (detail on the key rotation page)
+%%   crossed-out figure → not used
+
+flowchart TD
+    classDef chain fill:#fff1dd,stroke:#f7931a,stroke-width:2px,color:#4a2a00
+    classDef agg fill:#efe7fb,stroke:#7e57c2,stroke-width:2px,color:#2e1a4f
+    classDef sidecar fill:#e3f4e6,stroke:#2e7d32,stroke-width:2px,color:#123d17
+    classDef ok fill:#e3f4e6,stroke:#2e7d32,color:#123d17
+    classDef none fill:#f4f4f4,stroke:#777777,color:#333333
+    classDef bad fill:#fdecea,stroke:#b3261e,color:#7a1d15
+
+    Stuart(["Stuart<br/>🧾 update: new key"])
+    Agg["🤝 Aggregation Service"]:::agg
+    SMT@{ shape: cloud, label: "🌲 SMT<br/>leaf at hash(did)" }
+    class SMT agg
+    Beacon["🏷 SMT Beacon"]:::chain
+    Sidecar[("🧳 Sidecar Data")]:::sidecar
+    Satoshi(["Satoshi's resolver"])
+
+    subgraph Chain["⛓ Bitcoin blocks"]
+      direction LR
+      B1["✓"]:::ok --- B2["–"]:::none --- B3["✓ new key"]:::ok --- B4["○"]:::none --- B5["✗"]:::bad
+    end
+
+    subgraph Q["Q: the leaf of Stuart"]
+      direction TB
+      Inclusion["✓ inclusion: apply the update"]:::ok
+      NonInclusion["○ non-inclusion: no update"]:::none
+      Gibberish["✗ gibberish: DID invalid"]:::bad
+      Inclusion ~~~ NonInclusion ~~~ Gibberish
+    end
+
+    Stuart -->|"🔖 leaf value"| Agg
+    Agg --> SMT
+    SMT -->|"signed? yes<br/>n of n, or k of n"| Beacon
+    Beacon -->|"⛓ SMT root"| Chain
+    Stuart -.->|"🧾 🌲"| Sidecar
+    Sidecar -.-> Satoshi
+    Chain --> Satoshi
+    Satoshi --> Q

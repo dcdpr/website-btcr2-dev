@@ -1,0 +1,21 @@
+---
+title: Stuart meets Satoshi - who talks to whom
+---
+
+%% Stuart and Satoshi are peers in a p2p, Signal-like messaging channel.
+%% Stuart rotates a key. Satoshi verifies the new key.
+%% Solid arrows: on-chain data. Dashed arrows: off-chain data.
+
+flowchart TD
+    Stuart(["Stuart<br/>DID controller"])
+    Beacon["BTCR2 Beacon<br/>Singleton, CAS, or SMT"]
+    BTC[("Bitcoin")]
+    Data[("Sidecar Data<br/>or CAS")]
+    Satoshi(["Satoshi<br/>channel peer"])
+
+    Stuart -->|"(1) announce the update"| Beacon
+    Beacon -->|"Beacon Signal"| BTC
+    Stuart -.->|"(2) update data"| Data
+    Stuart -.->|"(3) message signed<br/>with the new key"| Satoshi
+    BTC -->|"(4) resolve the DID"| Satoshi
+    Data -.-> Satoshi

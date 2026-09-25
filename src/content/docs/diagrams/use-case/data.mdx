@@ -1,0 +1,43 @@
+---
+title: 'Stuart meets Satoshi: data'
+description: The data of the key rotation use case, its sources, and its flow from Stuart to Satoshi.
+tableOfContents: false
+---
+
+import MermaidFile from '../../../../components/MermaidFile.astro';
+
+## Data movement
+
+Each message shows the icons of the data that moves. The diagram uses an SMT Beacon. With the other Beacon Types,
+only the announcement is different ([key rotation](/diagrams/use-case/key-rotation/)).
+
+<MermaidFile file="use-case/data-movement.mmd" />
+
+| Icon | Data                                    | Icon | Data                       |
+| :--- | :-------------------------------------- | :--- | :------------------------- |
+| 🔑   | public key                              | ⛓    | Beacon Signal (on-chain)   |
+| 🧾   | BTCR2 Signed Update                     | 🏷    | Beacon Address             |
+| 🔖   | 32-byte hash                            | 🆔   | did                        |
+| 🌲   | SMT Proof                               | 💬   | channel message            |
+| 🗺    | CAS Announcement                        | 🧳   | Sidecar Data               |
+| 📝   | Unsigned Beacon Signal                  | 📄   | resolved DID document      |
+| ✍    | signature                               | 🤝   | Aggregation Service        |
+|      |                                         | 📦   | CAS                        |
+
+## Data sources
+
+Each color is one data source. Only the cohort gets data from the Aggregation Service. Satoshi gets the SMT Proofs
+only from the Sidecar Data, because CAS never stores them.
+
+<MermaidFile file="use-case/data-sources.mmd" />
+
+## Data flow
+
+Stuart rotates a key with an SMT Beacon. For each Beacon Signal, the leaf of Stuart in the SMT has one of three states:
+
+- ✓ **inclusion:** the leaf is `hash(hash(nonce) + updateId)`. Satoshi applies the update.
+- ○ **non-inclusion:** the leaf is `hash(hash(nonce))`. There is no update.
+- ✗ **gibberish:** no SMT Proof of Stuart gives the SMT root. The DID is invalid (`INVALID_SIGNAL_DATA` or
+  `MISSING_UPDATE_DATA`). With a `k-of-n` fallback, this can occur if Stuart did not sign.
+
+<MermaidFile file="use-case/data-flow.mmd" />

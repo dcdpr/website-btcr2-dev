@@ -1,0 +1,24 @@
+---
+title: Key rotation with a Singleton Beacon
+config:
+  sequence:
+    actorMargin: 20
+    width: 110
+---
+
+%% Before: Satoshi trusts the keys of Stuart at version N.
+
+sequenceDiagram
+    autonumber
+    actor Stu as Stuart
+    participant BTC as Bitcoin
+    actor Sat as Satoshi
+
+    Stu->>Stu: BTCR2 Update: add the new key.<br/>Sign it with the old key.
+    Stu->>BTC: Beacon Signal:<br/>hash of the update
+    BTC-->>Stu: 6 confirmations
+    Stu->>Sat: Message signed with the new key,<br/>did, Sidecar Data
+    Sat->>BTC: Resolve the DID
+    BTC-->>Sat: Beacon Signal
+    Sat->>Sat: Check the update against<br/>the hash. Apply it.
+    Sat->>Sat: Verify the message.<br/>Trust the new key.

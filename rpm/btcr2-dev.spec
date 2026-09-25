@@ -60,7 +60,8 @@ fi
   algorithms. Split the Diagrams page into six pages and add new diagrams.
 - Rework the Stuart-meets-Satoshi use case diagrams and rename them.
   Add architecture, first contact, and data flow diagrams.
-- Show the use case diagrams on four pages under Diagrams.
+- Simplify the use case diagrams and show them on four pages under
+  Diagrams (/diagrams/use-case/).
 - Show a k-of-n fallback next to the n-of-n signatures of Aggregate
   Beacons, with the risk of each choice.
 

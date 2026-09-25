@@ -1,0 +1,25 @@
+---
+title: States of the DID controller (Stuart)
+---
+
+%% Rule: only one update is in flight. A new update starts only after the last one has 6 confirmations.
+
+stateDiagram-v2
+    state "Idle: version N" as Idle
+    state "Make and sign the update" as Make
+    state "Announce: Beacon Signal" as Announce
+    state "Wait for 6 confirmations" as Pending
+    state "Send the update data to peers" as Send
+    state "Deactivated" as Deactivated
+
+    [*] --> Idle: create the DID (offline)
+    Idle --> Make: key rotation
+    Make --> Idle: error
+    Make --> Announce
+    Announce --> Announce: aggregation round failed
+    Announce --> Pending: broadcast
+    Pending --> Announce: transaction dropped
+    Pending --> Send: confirmed
+    Send --> Idle: version N + 1
+    Send --> Deactivated: the update deactivates the DID
+    Deactivated --> [*]

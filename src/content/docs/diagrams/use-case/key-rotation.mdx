@@ -1,0 +1,32 @@
+---
+title: 'Stuart meets Satoshi: key rotation'
+description: Stuart rotates a key with a Singleton Beacon, a CAS Beacon, and an SMT Beacon. Satoshi verifies the new key.
+tableOfContents: false
+---
+
+import MermaidFile from '../../../../components/MermaidFile.astro';
+
+The three sequences have the same start and the same end. Only the announcement is different. For the details, see
+[Update and Deactivate](/diagrams/update/), [Beacons](/diagrams/beacons/), and [Resolve](/diagrams/resolve/).
+
+## Singleton Beacon
+
+Stuart signs the Beacon Signal alone. Stuart waits for 6 confirmations before the next update. Stuart can also
+publish the update on CAS instead of the Sidecar Data.
+
+<MermaidFile file="use-case/key-rotation-singleton-beacon.mmd" />
+
+## CAS Beacon
+
+The cohort sees which DIDs have an update. The Beacon Signal needs the signatures of all `n` participants, or of `k`
+participants if the cohort has a `k-of-n` fallback. See
+[n-of-n and k-of-n signatures](/diagrams/beacons/#n-of-n-and-k-of-n-signatures).
+
+<MermaidFile file="use-case/key-rotation-cas-beacon.mmd" />
+
+## SMT Beacon
+
+The Aggregation Service sees only hashes. The leaf value hides if Stuart has an update
+([SMT leaf values](/diagrams/beacons/#smt-leaf-values)). Satoshi gets the SMT Proofs only from the Sidecar Data.
+
+<MermaidFile file="use-case/key-rotation-smt-beacon.mmd" />
