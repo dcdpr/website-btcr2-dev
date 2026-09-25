@@ -2,16 +2,16 @@
 title: Demo
 ---
 
-import DemoKeyPair from '../../theme/demos/KeyPair.vue';
+import DemoInputs from '../../theme/demos/Inputs.vue';
 import DemoCreate from '../../theme/demos/Create.vue';
 import DemoResolve from '../../theme/demos/Resolve.vue';
 import DemoUpdate from '../../theme/demos/Update.vue';
 
 The DID Method specification covers four CRUD operations. The widgets on this page
 run the **TypeScript** reference implementation (`@did-btcr2/api`) directly in
-your browser. Start with a key pair:
+your browser. Start with the inputs:
 
-* [Key Pair](#key-pair): generate a test key pair for the other demos.
+* [Key Pair and Genesis Document](#key-pair-and-genesis-document): generate test inputs for the other demos.
 * [Create](#create): produce a new `did:btcr2` identifier from a public key or a Genesis Document.
 * [Resolve](#resolve): resolve an identifier using Bitcoin beacon signals and optional sidecar data.
 * [Update](#update): apply a JSON Patch to the DID document and announce it on-chain.
@@ -24,14 +24,19 @@ Create, Update, and Deactivate support only the test networks (`testnet3`, `test
 (mainnet) DID. Never paste a real signing key.
 :::
 
-## Key Pair
+## Key Pair and Genesis Document
 
-Create needs a public key. Update and Deactivate need the matching secret key.
-**Generate** makes a new secp256k1 key pair in your browser. Copy the keys into
-the demos below. **Random Inputs** in Create uses this key pair, so you have the
-secret key that updates the new DID.
+Create needs a public key or a Genesis Document. Update and Deactivate need the
+matching secret key. The toggle selects what **Generate** makes:
 
-<DemoKeyPair client:only="vue" />
+* **Key Pair**: a new secp256k1 key pair, made in your browser.
+* **Genesis Document**: a document with the public key of the key pair and one
+  Singleton beacon. Select the network and the address type of the beacon.
+
+Copy the output into the demos below. **Random Inputs** in Create uses this key
+pair and this Genesis Document, so you have the secret key that updates the new DID.
+
+<DemoInputs client:only="vue" />
 
 ## Create
 
@@ -42,7 +47,8 @@ needed. The Create operation accepts either:
 * **`EXTERNAL`**: the SHA-256 hash of a JCS-canonicalized
   [Genesis Document](https://dcdpr.github.io/did-btcr2/terminology.html#genesis-document),
   a DID document written against the placeholder identifier `did:btcr2:_` that must
-  include at least one beacon `service` entry. **Random Inputs** builds a valid one with
+  include at least one beacon `service` entry. **Random Inputs** uses the Genesis Document
+  from the [generator above](#key-pair-and-genesis-document), or builds a new one with
   `api.btcr2.buildGenesisDocument()`. Keep the document: the hash is one-way, so
   resolving the resulting `x1…` identifier requires it as sidecar data.
 

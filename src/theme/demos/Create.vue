@@ -4,7 +4,13 @@ import type { NetworkName } from '@did-btcr2/api';
 import DemoCard from '../components/DemoCard.vue';
 import { TEST_NETWORKS, useDidBtcr2 } from '../composables/useDidBtcr2';
 import { hexToBytes, isHex } from './hex';
-import { demoKeyPair, generateDemoKeyPair } from './key-pair';
+import {
+  buildGenesis,
+  demoGenesis,
+  demoKeyPair,
+  generateDemoKeyPair,
+  type GenesisSpec,
+} from './shared-inputs';
 import { formatError } from './errors';
 import './demo-fields.css';
 
@@ -88,35 +94,38 @@ async function randomize() {
   if (!modules.value) return;
   selectedNetwork.value = networks[Math.floor(Math.random() * networks.length)];
   idType.value = Math.random() < 0.5 ? 'KEY' : 'EXTERNAL';
-  // Use the key pair of the Key Pair demo, so the user has the secret key
-  // that updates the new DID.
+  // Use the key pair and the genesis document of the Inputs demo, so the
+  // user has the secret key that updates the new DID.
   const keys = demoKeyPair.value ?? generateDemoKeyPair(modules.value);
   if (idType.value === 'KEY') {
     pubKeyHex.value = keys.publicKey;
     genesisDocText.value = '';
   } else {
     pubKeyHex.value = '';
-    generateGenesisDoc(hexToBytes(keys.publicKey), selectedNetwork.value as Network);
+    const genesis = demoGenesis.value?.spec;
+    if (genesis) selectedNetwork.value = genesis.network;
+    generateGenesisDoc(
+      genesis ?? {
+        network: selectedNetwork.value as Network,
+        publicKey: keys.publicKey,
+        addressType: 'p2wpkh',
+      },
+    );
   }
 }
 
-// Pubkey behind the last auto-generated genesis doc, kept so a network change
-// can regenerate the doc (its beacon address is network-specific). The text is
+// The input of the last generated genesis doc, kept so a network change can
+// regenerate the doc (its beacon address is network-specific). The text is
 // kept too so we never clobber a document the user has hand-edited.
-let lastGenPubKey: Uint8Array | null = null;
+let lastGenSpec: GenesisSpec | null = null;
 let lastGenDocText = '';
 
-/**
- * Build the genesis document with the library, not by hand. The builder
- * uses the placeholder id (did:btcr2:_), the two required contexts, and one
- * Singleton beacon with the P2WPKH address of the key for the network.
- */
-function generateGenesisDoc(pubKey: Uint8Array, network: Network) {
-  const api = createApiForNetwork(network);
+// Build the genesis document with the library, not by hand.
+function generateGenesisDoc(spec: GenesisSpec) {
+  const api = createApiForNetwork(spec.network);
   try {
-    const genesis = api.btcr2.buildGenesisDocument({ verificationMethods: [{ publicKey: pubKey }] });
-    lastGenPubKey = pubKey;
-    lastGenDocText = JSON.stringify(genesis, null, 2);
+    lastGenDocText = JSON.stringify(buildGenesis(api, spec), null, 2);
+    lastGenSpec = spec;
     genesisDocText.value = lastGenDocText;
   } finally {
     api.dispose();
@@ -127,10 +136,10 @@ watch(selectedNetwork, () => {
   if (
     idType.value === 'EXTERNAL' &&
     selectedNetwork.value &&
-    lastGenPubKey &&
+    lastGenSpec &&
     genesisDocText.value === lastGenDocText
   ) {
-    generateGenesisDoc(lastGenPubKey, selectedNetwork.value as Network);
+    generateGenesisDoc({ ...lastGenSpec, network: selectedNetwork.value as Network });
   }
 });
 
