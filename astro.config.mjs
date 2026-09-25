@@ -8,7 +8,7 @@ export default defineConfig({
   integrations: [
     // astro-mermaid must come before starlight so its remark plugin sees the
     // ```mermaid fences first.
-    mermaid({ autoTheme: true }),
+    mermaid({ autoTheme: true, mermaidConfig: { flowchart: { wrappingWidth: 320 } } }),
     starlight({
       title: 'did:btcr2',
       description:
@@ -18,7 +18,17 @@ export default defineConfig({
       ],
       sidebar: [
         { label: 'Specification', link: '/spec/' },
-        { label: 'Diagrams', link: '/diagrams/' },
+        {
+          label: 'Diagrams',
+          items: [
+            { label: 'Overview', link: '/diagrams/' },
+            { label: 'Create', link: '/diagrams/create/' },
+            { label: 'Resolve', link: '/diagrams/resolve/' },
+            { label: 'Update and Deactivate', link: '/diagrams/update/' },
+            { label: 'Beacons', link: '/diagrams/beacons/' },
+            { label: 'Data', link: '/diagrams/data/' },
+          ],
+        },
         { label: 'Demo', link: '/demo/' },
         {
           label: 'Implementations',
