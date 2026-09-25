@@ -1,20 +1,23 @@
 ---
-title: Data flow - Stuart rotates a key, Satoshi checks each Beacon Signal
+title: Data flow - Stuart rotates a key with an SMT Beacon, Satoshi checks each Beacon Signal
 ---
 
 %% Technical version of the hand sketch "btcr2 data flow visualization".
 %% Sketch element → diagram element:
 %%   smiley at the left → Stuart; smiley with a top hat at the right → Satoshi
-%%   "Agg" with three small faces and "k/n" → Aggregation Service and Aggregation Cohort (n-of-n in the spec example)
 %%   stars and papers → keys, DID document, BTCR2 Signed Update
-%%   tower → Singleton Beacon
-%%   "Map", "search by did", "signed? yes" → CAS Announcement: search by did, authenticated by the n-of-n signed Beacon Signal
-%%   cloud with a tree → CAS / IPFS and the SMT of the Aggregation Service
+%%   "Agg" with three small faces and "k/n" → Aggregation Service and Aggregation Cohort: k-of-n signatures
+%%     (the specification gives n-of-n as the RECOMMENDED example)
+%%   tower → SMT Beacon: the Beacon Address of the cohort, a service in the DID document of Stuart
+%%   cloud with a tree → Sparse Merkle Tree (SMT) of the Aggregation Service
+%%   "search by did", "Map" → the leaf index of a DID is hash(did); the SMT maps each index to a leaf value
+%%   "signed? yes" → k of n participants sign the Beacon Signal; its Signal Bytes are the SMT root
 %%   "Sidecar" stack, one row for each dot → Sidecar Data: one entry for each Beacon Signal
-%%   crossed-out figure → other parties: no access to the Sidecar Data
 %%   "K1" → did:btcr2:k1 identifier
 %%   bar with cells and dots → Bitcoin blocks with Beacon Signals
-%%   "Q: inclusion, non-inclusion, gibberish" and the faces under the bar → result of each Beacon Signal for Stuart's DID
+%%   "Q", "inclusion, non-inclusion, gibberish", tall box with 3 parts → the 3 states of the leaf of Stuart
+%%   faces under the bar → the leaf state for each Beacon Signal
+%%   crossed-out figure → not used
 %% Icons are the same as in data-movement.mmd.
 
 flowchart TB
@@ -22,81 +25,74 @@ flowchart TB
     classDef chain fill:#fff1dd,stroke:#f7931a,stroke-width:2px,color:#4a2a00
     classDef agg fill:#efe7fb,stroke:#7e57c2,stroke-width:2px,color:#2e1a4f
     classDef sidecar fill:#e3f4e6,stroke:#2e7d32,stroke-width:2px,color:#123d17
-    classDef cas fill:#e2eefb,stroke:#1565c0,stroke-width:2px,color:#0b2d55
     classDef ok fill:#e3f4e6,stroke:#2e7d32,color:#123d17
     classDef none fill:#f4f4f4,stroke:#777777,color:#333333
     classDef bad fill:#fdecea,stroke:#b3261e,color:#7a1d15
 
-    subgraph Cohort["🤝 Aggregation Cohort: n-of-n signatures (MuSig2)"]
-      Agg["Aggregation Service<br/>🌲 full SMT, 🗺 CAS Announcement"]:::agg
-      Others["Other Aggregation Participants"]:::agg
-    end
-
-    subgraph Stuart["Stuart (DID controller)"]
+    subgraph Stuart["✍ Write path: Stuart (DID controller)"]
       Keys["🔑 Keys<br/>old key → new key"]:::actor
       Doc["📄 DID document<br/>🆔 did:btcr2:k1…<br/>version N"]:::actor
       Update["🧾 BTCR2 Signed Update<br/>patch: new key<br/>version N + 1"]:::actor
     end
 
-    Beacon["🏷 Singleton Beacon<br/>(Beacon Address of Stuart)"]:::chain
-
-    subgraph CAS["📦 CAS / IPFS (public)"]
-      Map["🗺 CAS Announcement (map)<br/>search by did → 🔖 update hash<br/>signed? yes: 🔖 its hash is in the<br/>n-of-n signed Beacon Signal"]:::cas
-      Pub["🧾 BTCR2 Signed Updates<br/>search by 🔖 hash"]:::cas
+    subgraph Cohort["🤝 Aggregation Cohort"]
+      Agg["Aggregation Service<br/>collects one leaf value<br/>from each participant"]:::agg
+      SMT@{ shape: cloud, label: "🌲 Sparse Merkle Tree (SMT)<br/>search by did: leaf index = hash(did)<br/>map: leaf index → leaf value<br/>SMT root = Signal Bytes" }
+      Signers["✍ k of the n participants sign<br/>(n of n in the example of the specification).<br/>Stuart is one of the n.<br/>Each signer first checks its own leaf."]:::agg
     end
+    class SMT agg
 
-    Sidecar[("🧳 Sidecar Data (out of band)<br/>one entry for each Beacon Signal:<br/>🧾 updates, 🗺 CAS Announcements,<br/>🌲 SMT Proofs")]:::sidecar
-    Outsider(["✗ Other parties"]):::bad
+    Beacon["🏷 SMT Beacon<br/>Beacon Address of the cohort"]:::chain
 
-    subgraph Satoshi["Satoshi (channel peer)"]
-      Resolver["Resolver<br/>walks the blocks in order"]:::actor
-      Q{"Q: what does the Beacon Signal<br/>announce for Stuart's DID?"}
-      Inclusion["✓ inclusion<br/>apply the update"]:::ok
-      NonInclusion["○ non-inclusion<br/>no update: next Beacon Signal<br/>(CAS or SMT Beacon only)"]:::none
-      Gibberish["✗ gibberish<br/>data does not match the Signal Bytes,<br/>or data is missing: the DID is invalid<br/>(INVALID_SIGNAL_DATA, MISSING_UPDATE_DATA)"]:::bad
+    Sidecar[("🧳 Sidecar Data (out of band)<br/>one entry for each Beacon Signal:<br/>🧾 BTCR2 Signed Updates, 🌲 SMT Proofs")]:::sidecar
+
+    subgraph Satoshi["🔍 Resolve path: Satoshi (channel peer)"]
+      Resolver["Resolver<br/>takes the Beacon Signals in block order"]:::actor
+      Check["🌲 SMT Proof with id = SMT root<br/>search by did: walk from the leaf<br/>at hash(did) up to the SMT root"]:::actor
+      subgraph Q["Q: the 3 states of the leaf of Stuart"]
+        Inclusion["✓ inclusion<br/>leaf = hash(hash(nonce) + updateId)<br/>apply the 🧾 update with hash updateId"]:::ok
+        NonInclusion["○ non-inclusion<br/>leaf = hash(hash(nonce))<br/>no update: next Beacon Signal"]:::none
+        Gibberish["✗ gibberish<br/>no SMT Proof of Stuart gives the SMT root,<br/>for example a leaf value that Stuart did not submit.<br/>With k-of-n, this can occur if Stuart did not sign.<br/>The DID is invalid<br/>(INVALID_SIGNAL_DATA, MISSING_UPDATE_DATA)"]:::bad
+      end
       Trusted["🔑 new key trusted<br/>💬 message verified"]:::ok
     end
 
-    subgraph Chain["⛓ Bitcoin blockchain: blocks in time order"]
+    subgraph Chain["⛓ Bitcoin blockchain"]
       direction LR
       B1["block 1<br/>⛓ ⛓<br/>✓ ✓ earlier updates"]:::chain
       B2["block 2<br/>no Beacon Signal"]:::none
       B3["block 3<br/>⛓<br/>✓ inclusion"]:::chain
       B4["block 4<br/>no Beacon Signal"]:::none
       B5["block 5<br/>⛓ key rotation<br/>✓ inclusion"]:::chain
-      B6["block 6<br/>⛓ aggregate signal<br/>○ non-inclusion"]:::chain
+      B6["block 6<br/>⛓<br/>○ non-inclusion"]:::chain
       B7["block 7<br/>no Beacon Signal"]:::none
       B8["block 8 (example)<br/>⛓<br/>✗ gibberish"]:::bad
       B1 --- B2 --- B3 --- B4 --- B5 --- B6 --- B7 --- B8
     end
 
-    %% Stuart constructs the update
+    %% Stuart makes the update
     Keys -->|"🔑 new key"| Doc
     Doc -->|"📄 patch, 🔖 source and target hashes"| Update
     Keys -->|"✍ proof with the old<br/>capabilityInvocation key"| Update
+    Doc -.-|"🏷 service in the DID document"| Beacon
 
-    %% Announce: Singleton Beacon or Aggregate Beacon
-    Update -->|"🔖 Signal Bytes = hash of 🧾"| Beacon
-    Beacon -->|"⛓ Beacon Signal"| Chain
-    Update -->|"🔖 update hash or leaf value,<br/>🎲 nonce, ✍ partial signature"| Agg
-    Others -->|"🔖 hashes, ✍ partial signatures"| Agg
-    Agg -->|"⛓ aggregated Beacon Signal"| Chain
-    Agg -->|"🗺 CAS Announcement or 🌲 SMT Proof"| Stuart
+    %% The cohort aggregates and signs
+    Update -->|"🔖 leaf value for hash(did)"| Agg
+    Agg -->|"builds"| SMT
+    SMT -->|"🌲 SMT Proofs,<br/>📝 Unsigned Beacon Signal"| Signers
+    Signers -->|"signed? yes: ✍ k signatures"| Beacon
+    Beacon -->|"⛓ Beacon Signal<br/>Signal Bytes = SMT root"| Chain
 
-    %% Distribute the data
-    Agg -.->|"🗺 publish"| Map
-    Update -.->|"🧾 publish (optional)"| Pub
-    Stuart -->|"🧾 🗺 🌲"| Sidecar
-    Sidecar -->|"🧳 with 🆔 k1 did and 💬 message"| Resolver
-    Outsider -. "no access" .-x Sidecar
+    %% Stuart gives the data to Satoshi
+    Update -->|"🧾"| Sidecar
+    SMT -->|"🌲 SMT Proof of the leaf of Stuart"| Sidecar
+    Sidecar -->|"🧳 with 🆔 did:btcr2:k1…<br/>and 💬 message"| Resolver
 
     %% Satoshi checks each Beacon Signal
-    Chain -->|"⛓ Beacon Signals"| Resolver
-    Map -.->|"🗺 search by did"| Resolver
-    Pub -.->|"🧾 by hash"| Resolver
-    Resolver --> Q
-    Q --> Inclusion
-    Q --> NonInclusion
-    Q --> Gibberish
+    Chain -->|"⛓ Beacon Signals of the 🏷 Beacon Addresses<br/>in the DID document of Stuart"| Resolver
+    Resolver --> Check
+    Check --> Inclusion
+    Check --> NonInclusion
+    Check --> Gibberish
     Inclusion -->|"after the last Beacon Signal"| Trusted
-    NonInclusion --> Q
+    NonInclusion --> Check
