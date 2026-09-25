@@ -6,7 +6,7 @@ config:
     width: 110
 ---
 
-%% Each message shows the icons of the data that moves. The page has the legend:
+%% Each message names the data that moves. An icon marks each data type. The page has the legend:
 %% 🔑 public key · 🧾 BTCR2 Signed Update · 🔖 32-byte hash · 🌲 SMT Proof · 📝 Unsigned Beacon Signal
 %% ✍ signature · ⛓ Beacon Signal · 🏷 Beacon Address · 🆔 did · 💬 channel message · 🧳 Sidecar Data · 📄 DID document
 
@@ -17,12 +17,12 @@ sequenceDiagram
     participant BTC as Bitcoin ⛓
     actor Sat as Satoshi
 
-    Stu->>Stu: 🔑 → 🧾 → 🔖
+    Stu->>Stu: 🔑 new key → 🧾 update<br/>→ 🔖 hash of the update
     Stu->>AS: 🔖 leaf value
-    AS->>Stu: 🌲 SMT Proof, 📝
+    AS->>Stu: 🌲 SMT Proof,<br/>📝 Unsigned Beacon Signal
     Stu->>AS: ✍ signature
-    AS->>BTC: ⛓ 🌲 SMT root
-    Stu->>Sat: 💬 🆔 🧳 (🧾 🌲)
-    Sat->>BTC: 🏷 Beacon Addresses
+    AS->>BTC: ⛓ Beacon Signal<br/>with the 🌲 SMT root
+    Stu->>Sat: 💬 message, 🆔 did, 🧳 Sidecar Data<br/>(🧾 update, 🌲 SMT Proof)
+    Sat->>BTC: Find the Beacon Signals<br/>of the 🏷 Beacon Addresses
     BTC-->>Sat: ⛓ Beacon Signals
-    Sat->>Sat: 📄 with the new 🔑
+    Sat->>Sat: 📄 DID document<br/>with the 🔑 new key

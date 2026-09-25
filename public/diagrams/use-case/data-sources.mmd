@@ -11,11 +11,11 @@ flowchart TD
     classDef cas fill:#e2eefb,stroke:#1565c0,stroke-width:2px,color:#0b2d55
     classDef actor fill:#f4f4f4,stroke:#555555,color:#111111
 
-    Agg["🤝 Aggregation Service<br/>cohort only<br/>📝 🗺 🌲"]:::agg
+    Agg["🤝 Aggregation Service<br/>cohort only<br/><br/>📝 Unsigned Beacon Signals<br/>🗺 CAS Announcements<br/>🌲 SMT Proofs"]:::agg
     Stu(["Stuart"]):::actor
-    Sidecar["🧳 Sidecar Data<br/>private<br/>🧾 🗺 🌲"]:::sidecar
-    CAS["📦 CAS / IPFS<br/>public<br/>🧾 🗺"]:::cas
-    Chain["⛓ Bitcoin<br/>public<br/>Beacon Signals"]:::chain
+    Sidecar["🧳 Sidecar Data<br/>private<br/><br/>🧾 updates<br/>🗺 CAS Announcements<br/>🌲 SMT Proofs"]:::sidecar
+    CAS["📦 CAS / IPFS<br/>public<br/><br/>🧾 updates<br/>🗺 CAS Announcements"]:::cas
+    Chain["⛓ Bitcoin<br/>public<br/><br/>⛓ Beacon Signals"]:::chain
     Res(["Satoshi's resolver"]):::actor
 
     Agg --> Stu
