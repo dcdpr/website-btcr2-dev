@@ -6,12 +6,12 @@ title: Data flow - Stuart rotates a key with an SMT Beacon, Satoshi checks each 
 %% Sketch element → diagram element:
 %%   smiley at the left → Stuart; smiley with a top hat at the right → Satoshi
 %%   stars and papers → keys, DID document, BTCR2 Signed Update
-%%   "Agg" with three small faces and "k/n" → Aggregation Service and Aggregation Cohort: k-of-n signatures
-%%     (the specification gives n-of-n as the RECOMMENDED example)
+%%   "Agg" with three small faces and "k/n" → Aggregation Service and Aggregation Cohort:
+%%     n-of-n signatures (the RECOMMENDED example of the specification), or a k-of-n fallback
 %%   tower → SMT Beacon: the Beacon Address of the cohort, a service in the DID document of Stuart
 %%   cloud with a tree → Sparse Merkle Tree (SMT) of the Aggregation Service
 %%   "search by did", "Map" → the leaf index of a DID is hash(did); the SMT maps each index to a leaf value
-%%   "signed? yes" → k of n participants sign the Beacon Signal; its Signal Bytes are the SMT root
+%%   "signed? yes" → n (or k) participants sign the Beacon Signal; its Signal Bytes are the SMT root
 %%   "Sidecar" stack, one row for each dot → Sidecar Data: one entry for each Beacon Signal
 %%   "K1" → did:btcr2:k1 identifier
 %%   bar with cells and dots → Bitcoin blocks with Beacon Signals
@@ -38,7 +38,7 @@ flowchart TB
     subgraph Cohort["🤝 Aggregation Cohort"]
       Agg["Aggregation Service<br/>collects one leaf value<br/>from each participant"]:::agg
       SMT@{ shape: cloud, label: "🌲 Sparse Merkle Tree (SMT)<br/>search by did: leaf index = hash(did)<br/>map: leaf index → leaf value<br/>SMT root = Signal Bytes" }
-      Signers["✍ k of the n participants sign<br/>(n of n in the example of the specification).<br/>Stuart is one of the n.<br/>Each signer first checks its own leaf."]:::agg
+      Signers["✍ all n participants sign (n-of-n),<br/>or k of the n (k-of-n fallback).<br/>Stuart is one of the n.<br/>Each signer first checks its own leaf."]:::agg
     end
     class SMT agg
 
@@ -80,7 +80,7 @@ flowchart TB
     Update -->|"🔖 leaf value for hash(did)"| Agg
     Agg -->|"builds"| SMT
     SMT -->|"🌲 SMT Proofs,<br/>📝 Unsigned Beacon Signal"| Signers
-    Signers -->|"signed? yes: ✍ k signatures"| Beacon
+    Signers -->|"signed? yes: ✍ n or k signatures"| Beacon
     Beacon -->|"⛓ Beacon Signal<br/>Signal Bytes = SMT root"| Chain
 
     %% Stuart gives the data to Satoshi

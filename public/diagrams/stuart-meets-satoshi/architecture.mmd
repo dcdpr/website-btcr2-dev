@@ -14,7 +14,7 @@ flowchart TB
       Signer["Signer<br/>BIP340 Schnorr<br/>(external signer RECOMMENDED)"]
       SResolver["Resolver<br/>(fresh versionId before each update)"]
       Wallet["Bitcoin wallet<br/>UTXOs of the Beacon Address,<br/>fee, Beacon Signal, broadcast"]
-      AggClient["Aggregation client<br/>enroll, respond, validate,<br/>MuSig2 partial signature"]
+      AggClient["Aggregation client<br/>enroll, respond, validate,<br/>MuSig2 partial signature<br/>or k-of-n Schnorr signature"]
       Store[("Update data store<br/>Genesis Document, updates,<br/>CAS Announcements, SMT Proofs, nonces<br/>(life of the DID)")]
       SidecarBuilder["Sidecar Data builder"]
     end
@@ -22,7 +22,7 @@ flowchart TB
     subgraph AggService["Aggregation Service"]
       direction TB
       Cohort["Cohort manager<br/>define, advertise, enroll"]
-      MuSig["MuSig2 coordinator<br/>n-of-n P2TR Beacon Address,<br/>nonce and signature aggregation"]
+      MuSig["Signing coordinator<br/>P2TR Beacon Address: n-of-n MuSig2 key path,<br/>optional k-of-n script path<br/>nonce and signature aggregation"]
       SignalBuilder["Signal builder<br/>CAS Announcement, or optimized SMT<br/>and SMT Proofs, Unsigned Beacon Signal"]
     end
 
@@ -62,7 +62,7 @@ flowchart TB
 
     %% Aggregation Service
     Cohort -.->|"advertise"| Advert
-    AggClient <-->|"enrollment, responses,<br/>confirmation requests,<br/>partial signatures"| Cohort
+    AggClient <-->|"enrollment, responses,<br/>confirmation requests,<br/>signatures"| Cohort
     Cohort --> MuSig
     Cohort --> SignalBuilder
     MuSig -->|"aggregated Beacon Signal"| BTCNet

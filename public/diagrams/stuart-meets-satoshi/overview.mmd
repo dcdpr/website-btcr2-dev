@@ -28,9 +28,9 @@ flowchart LR
     %% Announce the key rotation
     Stuart -- "Beacon Signal (Signal Bytes = update hash)" --> Singleton
     Singleton --> BTC
-    Stuart -- "update hash, partial signature" --> AS
-    Others -- "update hash or no update, partial signature" --> AS
-    AS -- "aggregated Beacon Signal" --> BTC
+    Stuart -- "update hash, signature" --> AS
+    Others -- "update hash or no update, signature" --> AS
+    AS -- "Beacon Signal: n-of-n signature,<br/>or k-of-n fallback" --> BTC
 
     %% Off-chain update data distribution
     Stuart -. "BTCR2 Signed Update, CAS Announcement (optional)" .-> CAS

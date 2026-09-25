@@ -71,12 +71,41 @@ sequenceDiagram
 A CAS Beacon or an SMT Beacon puts the updates of many DIDs into one Beacon Signal. An
 [Aggregation Service](https://dcdpr.github.io/did-btcr2/beacons/aggregate-beacons.html) coordinates the Aggregation
 Participants of an Aggregation Cohort. The specification gives a RECOMMENDED example protocol with MuSig2 (BIP327).
-The diagrams show this example. A full aggregation protocol is out of scope for the specification.
+The diagrams show this example and a `k-of-n` fallback. A full aggregation protocol is out of scope for the
+specification.
+
+### n-of-n and k-of-n signatures
+
+The specification RECOMMENDS a Beacon Address that needs an `n-of-n` signature. Then each Beacon Signal needs a
+signature from every participant. The specification does not require `n-of-n`. A cohort can also accept `k` of the
+`n` signatures, with `k < n`. For example, a P2TR Beacon Address can have an `n-of-n` MuSig2 key path and a `k-of-n`
+script path as a fallback.
+
+Each choice has a risk ([Worst Case](https://dcdpr.github.io/did-btcr2/appendix.html#worst-case)):
+
+- `n-of-n`: one participant that does not sign stops all Beacon Signals of the cohort.
+- `k-of-n`: a participant that does not sign does not check the Beacon Signal. The signal can announce an update for
+  the DID of that participant that the participant did not submit. A resolver cannot get that update, so the DID is
+  invalid ([Invalidation Attacks](https://dcdpr.github.io/did-btcr2/appendix/security-considerations.html#invalidation-attacks)).
+
+In both cases, a Singleton Beacon in the DID document is a fallback.
+
+```mermaid
+flowchart TD
+  Unsigned["Unsigned Beacon Signal.<br/>Each participant checks its own entry before it signs."] --> Count{"How many participants sign?"}
+  Count -->|"all n"| NofN["n-of-n: MuSig2 key path<br/>one aggregated signature<br/>(RECOMMENDED example)"]
+  Count -->|"k to n - 1<br/>(cohort with a k-of-n fallback)"| KofN["k-of-n fallback: script path<br/>k Schnorr signatures"]
+  Count -->|"fewer"| Fail["The round fails.<br/>No Beacon Signal."]
+  NofN --> Signal["Broadcast the Beacon Signal"]
+  KofN --> Signal
+  KofN -.- Risk["Risk: a participant that did not sign<br/>did not check its entry"]
+```
 
 ### Create an Aggregation Cohort
 
-The Beacon Address is an `n-of-n` Pay-to-Taproot (P2TR) address. Each Aggregation Participant gives one of the `n`
-keys. Thus each Beacon Signal needs a signature from every participant. The Aggregation Service is minimally trusted.
+The Beacon Address is a Pay-to-Taproot (P2TR) address. Each Aggregation Participant gives one of the `n` keys. With
+`n-of-n`, each Beacon Signal needs a signature from every participant. With a `k-of-n` fallback, the participants also
+check `k`. The Aggregation Service is minimally trusted.
 
 ```mermaid
 sequenceDiagram
@@ -87,8 +116,8 @@ sequenceDiagram
 
     Service->>P: Advertise the Aggregation Cohort<br/>(Beacon Type, size, costs, timing)
     P->>Service: Enroll: DIDs or indexes (SHA-256 of a DID)<br/>and a Schnorr public key
-    Service->>Service: Finalize the membership.<br/>Compute the n-of-n P2TR Beacon Address.
-    Service->>P: The Beacon Address and<br/>the set of n public keys
+    Service->>Service: Finalize the membership.<br/>Compute the P2TR Beacon Address: n-of-n key path,<br/>optional k-of-n script path.
+    Service->>P: The Beacon Address,<br/>the set of n public keys, and k
     P->>P: Compute the address again. Make sure<br/>that the set contains their key.
     P->>BTC: Update each DID to add a CASBeacon or SMTBeacon<br/>service (through an existing BTCR2 Beacon)
 ```
@@ -122,9 +151,16 @@ sequenceDiagram
         Service->>P: SMT Proofs for their indexes,<br/>Unsigned Beacon Signal, aggregated nonce
         P->>P: Verify each SMT Proof<br/>against the Signal Bytes
     end
-    P->>Service: Partial signature
+    alt n-of-n: all n participants sign
+        P->>Service: MuSig2 partial signature
+        Service->>Service: Aggregate the partial signatures
+    else k-of-n fallback: some participants do not sign
+        Service->>P: Fallback request: the same<br/>transaction, script path
+        P->>P: Check that the Signal Bytes<br/>did not change
+        P->>Service: Schnorr signature
+        Note over Service: Wait for k signatures.
+    end
     P->>P: Keep the updates, and the CAS Announcement<br/>or the SMT Proofs and nonces
-    Service->>Service: Aggregate the partial signatures
     Service->>BTC: Broadcast the Beacon Signal
 ```
 

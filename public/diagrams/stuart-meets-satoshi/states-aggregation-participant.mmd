@@ -3,13 +3,14 @@ title: States of an Aggregation Participant (Stuart) - CAS Beacon and SMT Beacon
 ---
 
 %% One state machine for a DID controller in an Aggregation Cohort.
-%% It follows the RECOMMENDED MuSig2 example of the specification.
+%% It follows the RECOMMENDED MuSig2 example of the specification (n-of-n),
+%% with an optional k-of-n fallback.
 %% The update states are in states-did-controller.mmd.
 
 stateDiagram-v2
     state "Not in a cohort" as Out
     state "Enrolled: sent did (CAS) or didIndex (SMT)<br/>and a Schnorr public key" as Enrolled
-    state "Check the n-of-n P2TR Beacon Address:<br/>compute it again from the n public keys" as AddressCheck
+    state "Check the P2TR Beacon Address:<br/>compute it again from the n public keys<br/>(and k, if the cohort has a k-of-n fallback)" as AddressCheck
     state "Add the CASBeacon or SMTBeacon service<br/>(DID update through the Singleton Beacon)" as AddService
     state "Member of the cohort" as Member {
         state "Wait for an update opportunity" as Wait
@@ -17,8 +18,9 @@ stateDiagram-v2
         state "Wait for the confirmation request" as WaitRequest
         state "Validate the request:<br/>CAS: own entries and hash of the CAS Announcement<br/>SMT: SMT Proof of each own index against the root" as Validate
         state valid <<choice>>
-        state "Send a partial signature" as PartialSign
-        state "Refuse to sign (the round fails)" as Refuse
+        state "Send a MuSig2 partial signature" as PartialSign
+        state "k-of-n fallback: check the Signal Bytes again,<br/>send a Schnorr signature (script path)" as FallbackSign
+        state "Refuse to sign" as Refuse
         state "Wait for the Beacon Signal broadcast" as WaitBroadcast
         state "Keep the round data for the life of the DID:<br/>CAS Announcement, or SMT Proof and nonce,<br/>and the BTCR2 Signed Update (if any)" as Keep
 
@@ -30,12 +32,17 @@ stateDiagram-v2
         Validate --> valid
         valid --> PartialSign: data matches own submission
         valid --> Refuse: data does not match
-        Refuse --> Wait
+        Refuse --> Wait: round fails
+        Refuse --> Invalid: k-of-n only, the Beacon Signal goes out<br/>with k signatures and a bad entry
         PartialSign --> WaitBroadcast
+        WaitBroadcast --> FallbackSign: fallback request
+        FallbackSign --> WaitBroadcast
         WaitBroadcast --> Wait: round fails (never reuse the MuSig2 nonce)
         WaitBroadcast --> Keep: Beacon Signal broadcast
         Keep --> Wait
     }
+
+    state "DID invalid: a resolver cannot get the announced update.<br/>Make a new DID." as Invalid
 
     [*] --> Out
     Out --> Enrolled: cohort advertised, enroll

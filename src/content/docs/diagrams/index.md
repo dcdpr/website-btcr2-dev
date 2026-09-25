@@ -75,7 +75,7 @@ flowchart TB
   L5["<b>Update authorization</b><br/>BTCR2 Signed Update<br/>Data Integrity Proof (bip340-jcs-2025)<br/>Root Capability: capabilityInvocation, Write<br/>BIP340 Schnorr signature"]
   L4["<b>DID document state</b><br/>Genesis Bytes: public key<br/>or Genesis Document<br/>Initial DID Document, Current DID Document<br/>BTCR2 Unsigned Update: JSON Patch,<br/>sourceHash, targetHash, targetVersionId<br/>JSON Document Hashing: JCS, then SHA-256"]
   L3["<b>Update data distribution (off-chain)</b><br/>Sidecar Data<br/>CAS (IPFS CIDv1, raw)"]
-  L2["<b>Beacons</b><br/>Singleton, CAS, and SMT Beacons<br/>Beacon Signal<br/>BTCR2 Update Announcement<br/>Aggregation Cohort (n-of-n MuSig2 example)"]
+  L2["<b>Beacons</b><br/>Singleton, CAS, and SMT Beacons<br/>Beacon Signal<br/>BTCR2 Update Announcement<br/>Aggregation Cohort (n-of-n MuSig2 example,<br/>optional k-of-n fallback)"]
   L1["<b>Bitcoin</b><br/>Transaction that spends<br/>from a Beacon Address<br/>Last output: OP_RETURN<br/>and 32 Signal Bytes<br/>Block height, mediantime, confirmations<br/>Networks: bitcoin, signet, regtest,<br/>testnet3, testnet4, mutinynet"]
 
   L7 --> L6 --> L5 --> L4 --> L3 --> L2 --> L1

@@ -20,12 +20,12 @@ sequenceDiagram
     else CAS Beacon
         Stu->>AS: 🆔 did + 🔖 hash of 🧾 + 🎲 MuSig2 nonce
         AS->>Stu: 🗺 CAS Announcement + 📝 Unsigned Beacon Signal
-        Stu->>AS: ✍ partial signature
+        Stu->>AS: ✍ partial signature (n-of-n), or ✍ Schnorr signature (k-of-n fallback)
         AS->>BTC: ⛓ Beacon Signal: Signal Bytes = 🔖 hash of 🗺
     else SMT Beacon
         Stu->>AS: 🔖 didIndex + 🔖 leaf value + 🎲 MuSig2 nonce
         AS->>Stu: 🌲 SMT Proof + 📝 Unsigned Beacon Signal
-        Stu->>AS: ✍ partial signature
+        Stu->>AS: ✍ partial signature (n-of-n), or ✍ Schnorr signature (k-of-n fallback)
         AS->>BTC: ⛓ Beacon Signal: Signal Bytes = 🌲 SMT root
     end
 
@@ -44,4 +44,4 @@ sequenceDiagram
     Res-->>Sat: 📄 DID document with 🔑 new key + metadata
     Sat->>Sat: Verify 💬 with 🔑
 
-    Note over Stu,Res: Legend: 🆔 did · 🔑 public key · 🧾 BTCR2 Signed Update · 🔖 32-byte hash<br/>🗺 CAS Announcement · 🌲 SMT Proof · 📝 Unsigned Beacon Signal · ✍ partial signature<br/>🎲 MuSig2 nonce · ⛓ Beacon Signal (on-chain) · 🏷 Beacon Address · 🧳 Sidecar Data<br/>📄 resolved DID document · 💬 channel message · 🤝 Aggregation Service · 📦 CAS
+    Note over Stu,Res: Legend: 🆔 did · 🔑 public key · 🧾 BTCR2 Signed Update · 🔖 32-byte hash<br/>🗺 CAS Announcement · 🌲 SMT Proof · 📝 Unsigned Beacon Signal · ✍ signature<br/>🎲 MuSig2 nonce · ⛓ Beacon Signal (on-chain) · 🏷 Beacon Address · 🧳 Sidecar Data<br/>📄 resolved DID document · 💬 channel message · 🤝 Aggregation Service · 📦 CAS
