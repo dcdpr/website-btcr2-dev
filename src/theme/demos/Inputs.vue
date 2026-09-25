@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { BeaconAddressType, NetworkName } from '@did-btcr2/api';
+import type { BeaconAddressType, BeaconType, NetworkName } from '@did-btcr2/api';
 import CopyButton from '../components/CopyButton.vue';
 import DemoCard from '../components/DemoCard.vue';
 import { TEST_NETWORKS, useDidBtcr2 } from '../composables/useDidBtcr2';
@@ -23,8 +23,10 @@ const keyFields = computed(() => [
 ]);
 
 // Genesis Document mode.
+const BEACON_TYPES: readonly BeaconType[] = ['SingletonBeacon', 'CASBeacon', 'SMTBeacon'];
 const ADDRESS_TYPES: readonly BeaconAddressType[] = ['p2pkh', 'p2wpkh', 'p2tr'];
 const network = ref<NetworkName>('mutinynet');
+const beaconType = ref<BeaconType>('SingletonBeacon');
 const addressType = ref<BeaconAddressType>('p2wpkh');
 const genesisPubKey = ref('');
 const genesisError = ref<string | null>(null);
@@ -67,12 +69,12 @@ console.log({ publicKey, secretKey });`;
 // The network sets the beacon address.
 const api = createApi({ btc: { network: '${network.value}' } });
 const publicKey = hexToBytes('${genesisPubKey.value || '<compressed-secp256k1-pubkey-hex>'}');
-// One key with the four verification relationships, and one Singleton
-// beacon with the ${addressType.value} address of the key. Every id uses the
+// One key with the four verification relationships, and one beacon
+// with the ${addressType.value} address of the key. Every id uses the
 // placeholder did:btcr2:_.
 const genesisDocument = api.btcr2.buildGenesisDocument({
   verificationMethods: [{ publicKey }],
-  beacons: [{ type: 'SingletonBeacon', publicKey, addressType: '${addressType.value}' }],
+  beacons: [{ type: '${beaconType.value}', publicKey, addressType: '${addressType.value}' }],
 });
 // Create hashes it into a did:btcr2:x1... identifier:
 //   api.btcr2.createExternalFromDocument(genesisDocument)
@@ -86,7 +88,12 @@ function run() {
     return;
   }
   const publicKey = genesisPubKey.value || generateDemoKeyPair(modules.value).publicKey;
-  const spec = { network: network.value, publicKey, addressType: addressType.value };
+  const spec = {
+    network: network.value,
+    publicKey,
+    beaconType: beaconType.value,
+    addressType: addressType.value,
+  };
   const api = createApiForNetwork(spec.network);
   try {
     demoGenesis.value = { spec, document: buildGenesis(api, spec) };
@@ -122,11 +129,17 @@ function run() {
     </p>
 
     <template v-else>
-      <div class="demo-row cols-2">
+      <div class="demo-row cols-3">
         <label class="demo-field">
-          <span class="demo-label">Bitcoin Network (of the beacon address)</span>
+          <span class="demo-label">Bitcoin Network</span>
           <select class="demo-select" v-model="network">
             <option v-for="n in TEST_NETWORKS" :key="n" :value="n">{{ n }}</option>
+          </select>
+        </label>
+        <label class="demo-field">
+          <span class="demo-label">Beacon type</span>
+          <select class="demo-select" v-model="beaconType">
+            <option v-for="t in BEACON_TYPES" :key="t" :value="t">{{ t }}</option>
           </select>
         </label>
         <label class="demo-field">
@@ -136,6 +149,11 @@ function run() {
           </select>
         </label>
       </div>
+      <p v-if="beaconType !== 'SingletonBeacon'" class="demo-hint">
+        This {{ beaconType }} has one party: the address comes from your key, and you sign each
+        signal alone. Resolve needs the {{ beaconType === 'CASBeacon' ? 'CAS Announcement' : 'SMT proof' }}
+        from the Update sidecar.
+      </p>
       <label class="demo-field">
         <span class="demo-label">Compressed secp256k1 Public Key (hex, 33 bytes)</span>
         <input
