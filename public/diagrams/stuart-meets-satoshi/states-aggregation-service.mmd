@@ -1,0 +1,43 @@
+---
+title: States of the Aggregation Service - CAS Beacon and SMT Beacon cohorts
+---
+
+%% One state machine for the Aggregation Service.
+%% It follows the RECOMMENDED MuSig2 example of the specification.
+%% The service sees hashes only. It never needs a DID document or a BTCR2 Update.
+
+stateDiagram-v2
+    state "Cohort defined: Beacon Type (CAS or SMT),<br/>size, costs, timing, pull or push flow" as Defined
+    state "Advertised (for example Nostr or DIDComm)" as Advertised
+    state "Enrolling: collect did or didIndex<br/>and a Schnorr public key per participant" as Enrolling
+    state "Finalized: compute the n-of-n P2TR Beacon Address,<br/>send it with the n public keys" as Finalized
+    state "Active cohort" as Active {
+        state "Ready for a round" as Ready
+        state "Collect responses: update or no update,<br/>and a MuSig2 nonce, from all n participants" as Collect
+        state "Build the Beacon Signal:<br/>CAS: CAS Announcement, Signal Bytes = its hash<br/>SMT: optimized SMT, Signal Bytes = root, SMT Proofs<br/>Unsigned Beacon Signal, aggregated nonce" as Build
+        state "Request confirmation: send the CAS Announcement<br/>or the SMT Proofs of each participant" as Request
+        state "Collect partial signatures from all n participants" as Sign
+        state "Aggregate the partial signatures, broadcast" as Broadcast
+        state "Round failed: discard the nonces" as Failed
+
+        [*] --> Ready
+        Ready --> Collect: announce an update opportunity (pull),<br/>or first update received (push)
+        Collect --> Build: all n responses
+        Collect --> Failed: a participant does not respond
+        Build --> Request
+        Request --> Sign
+        Sign --> Broadcast: all n partial signatures
+        Sign --> Failed: a participant refuses or does not respond
+        Broadcast --> Ready: Beacon Signal broadcast
+        Failed --> Ready: next round with new MuSig2 nonces
+    }
+    state "Cohort closed" as Closed
+
+    [*] --> Defined
+    Defined --> Advertised
+    Advertised --> Enrolling
+    Enrolling --> Enrolling: participant enrolls
+    Enrolling --> Finalized: membership closed
+    Finalized --> Active: participants verified the address
+    Active --> Closed: participants leave, or the service stops
+    Closed --> [*]

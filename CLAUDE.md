@@ -33,7 +33,7 @@ Vue 3 demo components live in `src/theme/` (`components/`, `demos/`, `composable
 The components still use `--vp-c-*` CSS variables from their VitePress origin; `src/styles/custom.css` aliases those to Starlight's `--sl-color-*` palette. Don't remove the alias block.
 
 ### Mermaid diagrams
-```` ```mermaid ```` fences render client-side via the `astro-mermaid` integration (registered BEFORE `starlight` in `astro.config.mjs`; order matters). Theme switching is automatic. `mermaidConfig.flowchart.wrappingWidth` is 320, so node text wraps less. Diagram sources live inline in the `diagrams/` pages; standalone OKR sources are kept in `public/diagrams/okrs/`. The diagrams use the terms of the current spec and stay implementation agnostic. After a spec change, check them against the spec.
+```` ```mermaid ```` fences render client-side via the `astro-mermaid` integration (registered BEFORE `starlight` in `astro.config.mjs`; order matters). Theme switching is automatic. `mermaidConfig.flowchart.wrappingWidth` is 320, so node text wraps less. Diagram sources live inline in the `diagrams/` pages; the Stuart-meets-Satoshi use case sources (key rotation with each Beacon Type, state machines for each actor, data movement, data sources) are kept as `.mmd` files in `public/diagrams/stuart-meets-satoshi/`. The diagrams use the terms of the current spec and stay implementation agnostic. After a spec change, check them against the spec.
 
 ### Bitcoin REST and CAS endpoints (CORS-safe executor is REQUIRED)
 All networks use the library's default REST hosts (mempool.space, mutinynet.com, localhost for `regtest`). `createApiForNetwork()` in `src/theme/composables/useDidBtcr2.ts` passes a custom `executor` that removes `Content-Type` from GET requests.

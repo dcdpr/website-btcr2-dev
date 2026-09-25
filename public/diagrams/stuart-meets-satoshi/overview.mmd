@@ -1,0 +1,43 @@
+---
+title: Stuart meets Satoshi - actors and data flows
+---
+
+%% Use case: Stuart and Satoshi are peers in a p2p, Signal-like messaging channel.
+%% Each peer is identified by a did:btcr2 DID. Stuart rotates a key. Satoshi verifies the new key.
+%% Solid arrows: calls and on-chain data. Dashed arrows: off-chain data.
+
+flowchart LR
+    subgraph Channel["p2p messaging channel"]
+      Stuart["Stuart (DID controller)"]
+      Satoshi["Satoshi (channel peer)"]
+    end
+
+    subgraph Beacons["BTCR2 Beacons of Stuart's DID"]
+      Singleton["Singleton Beacon"]
+      AS["Aggregation Service<br/>(CAS Beacon or SMT Beacon cohort)"]
+      Others["Other Aggregation Participants"]
+    end
+
+    subgraph Networks
+      BTC[("Bitcoin blockchain")]
+      CAS[("CAS / IPFS")]
+    end
+
+    Resolver["Satoshi's resolver"]
+
+    %% Announce the key rotation
+    Stuart -- "Beacon Signal (Signal Bytes = update hash)" --> Singleton
+    Singleton --> BTC
+    Stuart -- "update hash, partial signature" --> AS
+    Others -- "update hash or no update, partial signature" --> AS
+    AS -- "aggregated Beacon Signal" --> BTC
+
+    %% Off-chain update data distribution
+    Stuart -. "BTCR2 Signed Update, CAS Announcement (optional)" .-> CAS
+    Stuart -. "message signed with the new key, did, Sidecar Data" .-> Satoshi
+
+    %% Resolution and verification
+    Satoshi -- "resolve(did, sidecar)" --> Resolver
+    Resolver -- "find Beacon Signals" --> BTC
+    Resolver -. "get documents by hash" .-> CAS
+    Resolver -- "DID document with the new key" --> Satoshi

@@ -1,0 +1,62 @@
+---
+title: Stuart rotates a key with a Singleton Beacon, Satoshi verifies
+---
+
+%% Use case: Stuart and Satoshi are peers in a p2p, Signal-like messaging channel.
+%% Each peer is identified by a did:btcr2 DID. Satoshi trusts Stuart's keys at version N.
+
+sequenceDiagram
+    autonumber
+    actor Stu as Stuart (DID controller)
+    participant BTC as Bitcoin blockchain ⛓
+    participant CAS as CAS / IPFS 📦 (optional)
+    actor Sat as Satoshi (channel peer)
+    participant Res as Satoshi's resolver
+
+    Note over Stu,Res: Before: the channel uses Stuart's key at version N. Satoshi trusts this key.
+
+    rect rgba(128, 128, 128, 0.08)
+    Note over Stu: 1. Construct the update
+    Stu->>Stu: Resolve own DID (minConf 6) → versionId N
+    Stu->>Stu: Patch: add the new key to verificationMethod,<br/>make it the authentication and capabilityInvocation key,<br/>replace the Singleton Beacons of the old key with one for the new key
+    Stu->>Stu: Construct the BTCR2 Unsigned Update (targetVersionId N + 1)
+    Stu->>Stu: Sign with the current capabilityInvocation key<br/>(Data Integrity Proof, bip340-jcs-2025), then verify the proof
+    end
+
+    rect rgba(128, 128, 128, 0.08)
+    Note over Stu,BTC: 2. Announce through the Singleton Beacon
+    Stu->>Stu: Signal Bytes = SHA256(JCS(BTCR2 Signed Update))
+    Stu->>Stu: Build the Beacon Signal: spend a UTXO of the Beacon Address,<br/>last output OP_RETURN Signal Bytes. Sign with the Beacon Address key.
+    Stu->>BTC: Broadcast the Beacon Signal
+    BTC-->>Stu: minConf (6) confirmations
+    Note over Stu: Do not start the next update before this point.
+    end
+
+    rect rgba(128, 128, 128, 0.08)
+    Note over Stu,Sat: 3. Distribute the update data
+    alt CAS distribution (public)
+        Stu->>CAS: Publish the BTCR2 Signed Update (under its hash)
+    else Sidecar distribution (private)
+        Stu->>Stu: Keep the BTCR2 Signed Update for the life of the DID
+    end
+    Stu->>Sat: Channel message signed with the new key,<br/>did and Sidecar Data (all updates, if Sidecar distribution)
+    end
+
+    rect rgba(128, 128, 128, 0.08)
+    Note over Sat,Res: 4. Satoshi verifies
+    Sat->>Sat: Message key is not a trusted key → resolve
+    Sat->>Res: resolve(did, { sidecar })
+    Res->>Res: Establish current_document (version 1)
+    Res->>BTC: Find Beacon Signals of each Beacon Address
+    BTC-->>Res: Beacon Signal (Signal Bytes = update_hash), block metadata
+    alt Update in the Sidecar Data
+        Res->>Res: Get the update from update_lookup_table
+    else Update not in the Sidecar Data
+        Res->>CAS: Get the document by update_hash
+        CAS-->>Res: BTCR2 Signed Update (hash checked)
+    end
+    Res->>Res: Process Next Update: check sourceHash, targetVersionId,<br/>proof, and targetHash, then apply the patch
+    Res-->>Sat: didDocument (version N + 1) and didDocumentMetadata
+    Sat->>Sat: Check: not deactivated, versionId ≥ N,<br/>new key is in authentication
+    Sat->>Sat: Verify the channel message with the new key.<br/>Trust the new key. Stop trusting the old key.
+    end

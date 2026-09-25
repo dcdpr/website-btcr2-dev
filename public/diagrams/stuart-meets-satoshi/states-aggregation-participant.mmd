@@ -1,0 +1,46 @@
+---
+title: States of an Aggregation Participant (Stuart) - CAS Beacon and SMT Beacon
+---
+
+%% One state machine for a DID controller in an Aggregation Cohort.
+%% It follows the RECOMMENDED MuSig2 example of the specification.
+%% The update states are in states-did-controller.mmd.
+
+stateDiagram-v2
+    state "Not in a cohort" as Out
+    state "Enrolled: sent did (CAS) or didIndex (SMT)<br/>and a Schnorr public key" as Enrolled
+    state "Check the n-of-n P2TR Beacon Address:<br/>compute it again from the n public keys" as AddressCheck
+    state "Add the CASBeacon or SMTBeacon service<br/>(DID update through the Singleton Beacon)" as AddService
+    state "Member of the cohort" as Member {
+        state "Wait for an update opportunity" as Wait
+        state "Respond (always, also with no update):<br/>CAS: did and updateHash, or no update<br/>SMT: didIndex and leaf value (new nonce)<br/>new MuSig2 nonce" as Respond
+        state "Wait for the confirmation request" as WaitRequest
+        state "Validate the request:<br/>CAS: own entries and hash of the CAS Announcement<br/>SMT: SMT Proof of each own index against the root" as Validate
+        state valid <<choice>>
+        state "Send a partial signature" as PartialSign
+        state "Refuse to sign (the round fails)" as Refuse
+        state "Wait for the Beacon Signal broadcast" as WaitBroadcast
+        state "Keep the round data for the life of the DID:<br/>CAS Announcement, or SMT Proof and nonce,<br/>and the BTCR2 Signed Update (if any)" as Keep
+
+        [*] --> Wait
+        Wait --> Respond: update opportunity (pull),<br/>or own update ready (push)
+        Respond --> WaitRequest
+        WaitRequest --> Wait: round fails (timeout)
+        WaitRequest --> Validate: CAS Announcement or SMT Proofs,<br/>Unsigned Beacon Signal, aggregated nonce
+        Validate --> valid
+        valid --> PartialSign: data matches own submission
+        valid --> Refuse: data does not match
+        Refuse --> Wait
+        PartialSign --> WaitBroadcast
+        WaitBroadcast --> Wait: round fails (never reuse the MuSig2 nonce)
+        WaitBroadcast --> Keep: Beacon Signal broadcast
+        Keep --> Wait
+    }
+
+    [*] --> Out
+    Out --> Enrolled: cohort advertised, enroll
+    Enrolled --> AddressCheck: Beacon Address and n public keys received
+    AddressCheck --> Out: own key missing, or address differs (leave)
+    AddressCheck --> AddService: address verified
+    AddService --> Member: update settled (minConf)
+    Member --> Out: cohort fails, or leave<br/>(remove the beacon service with a DID update)

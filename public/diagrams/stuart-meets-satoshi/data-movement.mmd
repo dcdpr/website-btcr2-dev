@@ -1,0 +1,47 @@
+---
+title: Data movement - Stuart rotates a key, Satoshi verifies
+---
+
+%% Each message starts with the icons of the data that moves. The legend is at the end.
+
+sequenceDiagram
+    autonumber
+    actor Stu as Stuart (DID controller)
+    participant AS as Aggregation Service 🤝
+    participant BTC as Bitcoin blockchain ⛓
+    participant CAS as CAS / IPFS 📦
+    actor Sat as Satoshi (channel peer)
+    participant Res as Satoshi's resolver
+
+    Note over Stu: 🔑 new key → 🧾 BTCR2 Signed Update → 🔖 hash
+
+    alt Singleton Beacon
+        Stu->>BTC: ⛓ Beacon Signal: Signal Bytes = 🔖 hash of 🧾
+    else CAS Beacon
+        Stu->>AS: 🆔 did + 🔖 hash of 🧾 + 🎲 MuSig2 nonce
+        AS->>Stu: 🗺 CAS Announcement + 📝 Unsigned Beacon Signal
+        Stu->>AS: ✍ partial signature
+        AS->>BTC: ⛓ Beacon Signal: Signal Bytes = 🔖 hash of 🗺
+    else SMT Beacon
+        Stu->>AS: 🔖 didIndex + 🔖 leaf value + 🎲 MuSig2 nonce
+        AS->>Stu: 🌲 SMT Proof + 📝 Unsigned Beacon Signal
+        Stu->>AS: ✍ partial signature
+        AS->>BTC: ⛓ Beacon Signal: Signal Bytes = 🌲 SMT root
+    end
+
+    opt CAS distribution (public)
+        Stu->>CAS: 🧾 BTCR2 Signed Update, 🗺 CAS Announcement
+    end
+    Stu->>Sat: 💬 message signed with 🔑 + 🆔 did + 🧳 Sidecar Data (🧾, 🗺, 🌲)
+
+    Sat->>Res: 🆔 did + 🧳 Sidecar Data
+    Res->>BTC: 🏷 Beacon Addresses of the DID document
+    BTC-->>Res: ⛓ Beacon Signals: 🔖 Signal Bytes + block metadata
+    opt Document not in the 🧳 Sidecar Data
+        Res->>CAS: 🔖 hash
+        CAS-->>Res: 🧾 BTCR2 Signed Update or 🗺 CAS Announcement
+    end
+    Res-->>Sat: 📄 DID document with 🔑 new key + metadata
+    Sat->>Sat: Verify 💬 with 🔑
+
+    Note over Stu,Res: Legend: 🆔 did · 🔑 public key · 🧾 BTCR2 Signed Update · 🔖 32-byte hash<br/>🗺 CAS Announcement · 🌲 SMT Proof · 📝 Unsigned Beacon Signal · ✍ partial signature<br/>🎲 MuSig2 nonce · ⛓ Beacon Signal (on-chain) · 🏷 Beacon Address · 🧳 Sidecar Data<br/>📄 resolved DID document · 💬 channel message · 🤝 Aggregation Service · 📦 CAS
