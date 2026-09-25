@@ -2,11 +2,11 @@
 title: Java
 ---
 
-The Java integration is delivered via the [DIF Universal Resolver](https://dev.uniresolver.io/)
+The Java integration is delivered via the DIF [Universal Resolver](https://uniresolver.io/)
 and [Universal Registrar](https://uniregistrar.io/) drivers maintained by Danube Tech.
 
-* [`uni-resolver-driver-did-btr2`](https://github.com/danubetech/uni-resolver-driver-did-btr2)
-* [`uni-registrar-driver-did-btr2`](https://github.com/danubetech/uni-registrar-driver-did-btr2)
+* [`uni-resolver-driver-did-btcr2`](https://github.com/danubetech/uni-resolver-driver-did-btcr2)
+* [`uni-registrar-driver-did-btcr2`](https://github.com/danubetech/uni-registrar-driver-did-btcr2)
 
 > **Status** — Driver-only. There is no standalone Java SDK at this time;
 > JVM consumers should drive the operations via the Universal Resolver /
@@ -29,15 +29,19 @@ Content-Type: application/json
 }
 ```
 
-See [`uni-registrar-driver-did-btr2`](https://github.com/danubetech/uni-registrar-driver-did-btr2)
+See [`uni-registrar-driver-did-btcr2`](https://github.com/danubetech/uni-registrar-driver-did-btcr2)
 for the supported request shape.
 
 ## Resolve
 
 ```http
-GET https://dev.uniresolver.io/1.0/identifiers/did:btcr2:k1...
-Accept: application/did+ld+json
+GET https://uniresolver.io/1.0/identifiers/did:btcr2:k1qypcylxwhf8sykn2dztm6z8lxm43kwkyzf07qmp9jafv3zfntmpwtks9hmnrw
+Accept: application/did
 ```
+
+Or via UI (open in browser):
+
+https://uniresolver.io/#did:btcr2:k1qypcylxwhf8sykn2dztm6z8lxm43kwkyzf07qmp9jafv3zfntmpwtks9hmnrw
 
 ## Update
 
