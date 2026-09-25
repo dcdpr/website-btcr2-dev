@@ -60,6 +60,9 @@ fi
   algorithms. Split the Diagrams page into six pages and add new diagrams.
 - Rework the Stuart-meets-Satoshi use case diagrams and rename them.
   Add architecture, first contact, and data flow diagrams.
+- Show the use case diagrams on four pages under Diagrams.
+- Show a k-of-n fallback next to the n-of-n signatures of Aggregate
+  Beacons, with the risk of each choice.
 
 * Thu Sep 24 2026 jintekc <github@jintek.consulting> - 2.1.0-1
 - Move the demos and the TypeScript docs to @did-btcr2/api 0.27.

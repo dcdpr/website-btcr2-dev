@@ -1,0 +1,30 @@
+---
+title: 'Stuart meets Satoshi: state machines'
+description: State machines of the DID controller, the Aggregation Participant, the Aggregation Service, and the relying party.
+tableOfContents: false
+---
+
+import MermaidFile from '../../../../components/MermaidFile.astro';
+
+Each actor of the key rotation use cases has one state machine. Together, the four state machines cover all the
+key rotation sequences.
+
+## DID controller (Stuart)
+
+Only one update is in flight. A new update starts only after the last update has `minConf` confirmations.
+
+<MermaidFile file="stuart-meets-satoshi/states-did-controller.mmd" />
+
+## Aggregation Participant (Stuart)
+
+<MermaidFile file="stuart-meets-satoshi/states-aggregation-participant.mmd" />
+
+## Aggregation Service
+
+The Aggregation Service sees hashes only. It never needs a DID document or a BTCR2 Update.
+
+<MermaidFile file="stuart-meets-satoshi/states-aggregation-service.mmd" />
+
+## Relying party and resolver (Satoshi)
+
+<MermaidFile file="stuart-meets-satoshi/states-relying-party.mmd" />

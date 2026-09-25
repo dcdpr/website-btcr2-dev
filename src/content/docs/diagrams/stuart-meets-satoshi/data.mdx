@@ -1,0 +1,26 @@
+---
+title: 'Stuart meets Satoshi: data'
+description: The data of the key rotation use cases, its sources, and its flow from Stuart to Satoshi.
+tableOfContents: false
+---
+
+import MermaidFile from '../../../../components/MermaidFile.astro';
+
+## Data movement
+
+Each message starts with the icons of the data that moves. The legend is at the end of the diagram.
+
+<MermaidFile file="stuart-meets-satoshi/data-movement.mmd" />
+
+## Data sources
+
+Each color is one data source: the Bitcoin blockchain, the Aggregation Service, the Sidecar Data, and CAS/IPFS.
+
+<MermaidFile file="stuart-meets-satoshi/data-sources.mmd" />
+
+## Data flow
+
+Stuart rotates a key with an SMT Beacon. For each Beacon Signal, the leaf of Stuart in the SMT has one of three
+states: inclusion, non-inclusion, or gibberish.
+
+<MermaidFile file="stuart-meets-satoshi/data-flow.mmd" />

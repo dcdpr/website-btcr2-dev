@@ -1,0 +1,31 @@
+---
+title: 'Use case: Stuart meets Satoshi'
+description: Diagrams of one did:btcr2 use case. A DID controller rotates a key, and a channel peer verifies the new key.
+tableOfContents: false
+---
+
+import MermaidFile from '../../../../components/MermaidFile.astro';
+
+Stuart and Satoshi are peers in a p2p messaging channel, similar to Signal. A `did:btcr2` DID identifies each peer.
+Stuart rotates a key. Satoshi resolves the DID of Stuart and verifies the new key before Satoshi trusts a message.
+
+In the terms of the specification, Stuart is the DID controller and Satoshi is a relying party. The diagrams do not
+show one implementation. Each diagram links to its Mermaid source file.
+
+## Actors and data flows
+
+<MermaidFile file="stuart-meets-satoshi/overview.mmd" />
+
+## Architecture
+
+The components are logical responsibilities, not libraries. Each application can put them in one process or split
+them.
+
+<MermaidFile file="stuart-meets-satoshi/architecture.mmd" />
+
+## First contact
+
+Before a key rotation, the peers exchange DIDs and verify each other. The diagram shows one direction: Satoshi
+verifies Stuart.
+
+<MermaidFile file="stuart-meets-satoshi/channel-setup.mmd" />

@@ -1,0 +1,23 @@
+---
+// Renders a Mermaid source file from public/diagrams/ as a diagram, with a link to the source.
+// The astro-mermaid client script renders each pre.mermaid element on the page.
+interface Props {
+  file: string;
+}
+
+const sources = import.meta.glob<string>('/public/diagrams/**/*.mmd', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+const { file } = Astro.props;
+const source = sources[`/public/diagrams/${file}`];
+if (source === undefined) {
+  throw new Error(`MermaidFile: no file public/diagrams/${file}`);
+}
+const name = file.split('/').pop();
+---
+
+<pre class="mermaid mermaid-file">{source}</pre>
+<p class="mermaid-source"><a href={`/diagrams/${file}`}>Source: {name}</a></p>

@@ -27,6 +27,15 @@ export default defineConfig({
             { label: 'Update and Deactivate', link: '/diagrams/update/' },
             { label: 'Beacons', link: '/diagrams/beacons/' },
             { label: 'Data', link: '/diagrams/data/' },
+            {
+              label: 'Use case: Stuart meets Satoshi',
+              items: [
+                { label: 'Overview', link: '/diagrams/stuart-meets-satoshi/' },
+                { label: 'Key rotation', link: '/diagrams/stuart-meets-satoshi/key-rotation/' },
+                { label: 'State machines', link: '/diagrams/stuart-meets-satoshi/states/' },
+                { label: 'Data', link: '/diagrams/stuart-meets-satoshi/data/' },
+              ],
+            },
           ],
         },
         { label: 'Demo', link: '/demo/' },

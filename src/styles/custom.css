@@ -39,6 +39,17 @@ option {
   height: auto;
 }
 
+/* Use case pages (MermaidFile.astro): the diagrams are wide. These pages have no table of
+   contents, so the content column can use the width that Starlight gives a page without a sidebar. */
+html:not([data-has-toc]):has(pre.mermaid-file) {
+  --sl-content-width: 67.5rem;
+}
+
+.mermaid-source {
+  font-size: var(--sl-text-sm);
+  text-align: end;
+}
+
 /* Sidebar: Starlight shows every group label large and bold. A nested group
    label (TypeScript under Implementations) gets the style of its sibling links. */
 .top-level ul .large {
