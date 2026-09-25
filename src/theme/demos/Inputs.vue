@@ -6,7 +6,13 @@ import DemoCard from '../components/DemoCard.vue';
 import { TEST_NETWORKS, useDidBtcr2 } from '../composables/useDidBtcr2';
 import { formatError } from './errors';
 import { isHex } from './hex';
-import { buildGenesis, demoGenesis, demoKeyPair, generateDemoKeyPair } from './shared-inputs';
+import {
+  buildGenesis,
+  demoGenesis,
+  demoKeyPair,
+  generateDemoKeyPair,
+  type GenesisBeacon,
+} from './shared-inputs';
 import './demo-fields.css';
 
 const { ready, modules, createApiForNetwork } = useDidBtcr2();
@@ -26,8 +32,7 @@ const keyFields = computed(() => [
 const BEACON_TYPES: readonly BeaconType[] = ['SingletonBeacon', 'CASBeacon', 'SMTBeacon'];
 const ADDRESS_TYPES: readonly BeaconAddressType[] = ['p2pkh', 'p2wpkh', 'p2tr'];
 const network = ref<NetworkName>('mutinynet');
-const beaconType = ref<BeaconType>('SingletonBeacon');
-const addressType = ref<BeaconAddressType>('p2wpkh');
+const beacons = ref<GenesisBeacon[]>([{ type: 'SingletonBeacon', addressType: 'p2wpkh' }]);
 const genesisPubKey = ref('');
 const genesisError = ref<string | null>(null);
 
@@ -45,8 +50,26 @@ const isPubKeyValid = computed(() => {
   return isHex(h) && h.length === 66 && (h.startsWith('02') || h.startsWith('03'));
 });
 
+// A resolver maps each beacon address to one beacon service. If two beacons
+// share an address, a signal of one beacon is read as a signal of the other.
+// One key has one address of each type, so each address type is allowed once.
+const sharedAddressType = computed(() =>
+  ADDRESS_TYPES.find((t) => beacons.value.filter((b) => b.addressType === t).length > 1),
+);
+const hasAggregateType = computed(() => beacons.value.some((b) => b.type !== 'SingletonBeacon'));
+
+function addBeacon() {
+  const used = new Set(beacons.value.map((b) => b.addressType));
+  const free = ADDRESS_TYPES.find((t) => !used.has(t));
+  if (free) beacons.value.push({ type: 'SingletonBeacon', addressType: free });
+}
+
 // An empty public key is allowed: Generate then makes a key pair first.
-const canRun = computed(() => mode.value === 'keys' || !genesisPubKey.value || isPubKeyValid.value);
+const canRun = computed(
+  () =>
+    mode.value === 'keys' ||
+    ((!genesisPubKey.value || isPubKeyValid.value) && !sharedAddressType.value),
+);
 
 const response = computed(() =>
   mode.value === 'keys' ? demoKeyPair.value : (genesisError.value ?? demoGenesis.value?.document ?? null),
@@ -66,15 +89,16 @@ console.log({ publicKey, secretKey });`;
   }
   return `import { createApi } from '@did-btcr2/api';
 
-// The network sets the beacon address.
+// The network sets the beacon addresses.
 const api = createApi({ btc: { network: '${network.value}' } });
 const publicKey = hexToBytes('${genesisPubKey.value || '<compressed-secp256k1-pubkey-hex>'}');
-// One key with the four verification relationships, and one beacon
-// with the ${addressType.value} address of the key. Every id uses the
-// placeholder did:btcr2:_.
+// One key with the four verification relationships. Each beacon uses its
+// own address of the key. Every id uses the placeholder did:btcr2:_.
 const genesisDocument = api.btcr2.buildGenesisDocument({
   verificationMethods: [{ publicKey }],
-  beacons: [{ type: '${beaconType.value}', publicKey, addressType: '${addressType.value}' }],
+  beacons: [
+${beacons.value.map((b) => `    { type: '${b.type}', publicKey, addressType: '${b.addressType}' },`).join('\n')}
+  ],
 });
 // Create hashes it into a did:btcr2:x1... identifier:
 //   api.btcr2.createExternalFromDocument(genesisDocument)
@@ -91,8 +115,7 @@ function run() {
   const spec = {
     network: network.value,
     publicKey,
-    beaconType: beaconType.value,
-    addressType: addressType.value,
+    beacons: beacons.value.map((b) => ({ ...b })),
   };
   const api = createApiForNetwork(spec.network);
   try {
@@ -129,31 +152,14 @@ function run() {
     </p>
 
     <template v-else>
-      <div class="demo-row cols-3">
+      <div class="demo-row cols-2">
         <label class="demo-field">
           <span class="demo-label">Bitcoin Network</span>
           <select class="demo-select" v-model="network">
             <option v-for="n in TEST_NETWORKS" :key="n" :value="n">{{ n }}</option>
           </select>
         </label>
-        <label class="demo-field">
-          <span class="demo-label">Beacon type</span>
-          <select class="demo-select" v-model="beaconType">
-            <option v-for="t in BEACON_TYPES" :key="t" :value="t">{{ t }}</option>
-          </select>
-        </label>
-        <label class="demo-field">
-          <span class="demo-label">Beacon address type</span>
-          <select class="demo-select" v-model="addressType">
-            <option v-for="t in ADDRESS_TYPES" :key="t" :value="t">{{ t }}</option>
-          </select>
-        </label>
       </div>
-      <p v-if="beaconType !== 'SingletonBeacon'" class="demo-hint">
-        This {{ beaconType }} has one party: the address comes from your key, and you sign each
-        signal alone. Resolve needs the {{ beaconType === 'CASBeacon' ? 'CAS Announcement' : 'SMT proof' }}
-        from the Update sidecar.
-      </p>
       <label class="demo-field">
         <span class="demo-label">Compressed secp256k1 Public Key (hex, 33 bytes)</span>
         <input
@@ -169,6 +175,55 @@ function run() {
           The key pair fills this field. If it is empty, Generate makes a key pair first.
         </p>
       </label>
+
+      <div class="beacon-list" role="group" aria-label="Beacons">
+        <span class="demo-label">Beacon type</span>
+        <span class="demo-label">Beacon address type</span>
+        <span />
+        <template v-for="(beacon, i) in beacons" :key="i">
+          <select class="demo-select" v-model="beacon.type" :aria-label="`Beacon ${i + 1} type`">
+            <option v-for="t in BEACON_TYPES" :key="t" :value="t">{{ t }}</option>
+          </select>
+          <select
+            class="demo-select"
+            v-model="beacon.addressType"
+            :aria-label="`Beacon ${i + 1} address type`"
+          >
+            <option v-for="t in ADDRESS_TYPES" :key="t" :value="t">{{ t }}</option>
+          </select>
+          <button
+            type="button"
+            class="row-btn"
+            :disabled="beacons.length === 1"
+            :aria-label="`Remove beacon ${i + 1}`"
+            @click="beacons.splice(i, 1)"
+          >
+            Remove
+          </button>
+        </template>
+      </div>
+      <div class="beacon-actions">
+        <button
+          type="button"
+          class="row-btn"
+          :disabled="beacons.length >= ADDRESS_TYPES.length"
+          @click="addBeacon"
+        >
+          Add beacon
+        </button>
+        <span class="demo-hint">Each beacon uses its own address of the key: at most three.</span>
+      </div>
+      <p v-if="sharedAddressType" class="demo-warn">
+        Two beacons use the {{ sharedAddressType }} address. Give each beacon its own address type.
+      </p>
+      <p v-if="hasAggregateType" class="demo-hint">
+        A CAS Beacon or an SMT Beacon here has one party: the address comes from your key, and you
+        sign each signal alone. Resolve needs the CAS Announcement or the SMT proof from the Update
+        sidecar.
+      </p>
+      <p v-if="!beacons.some((b) => b.type === 'SingletonBeacon')" class="demo-hint">
+        The specification recommends at least one Singleton Beacon as a fallback.
+      </p>
     </template>
 
     <template v-if="mode === 'keys'" #response>
@@ -210,6 +265,39 @@ function run() {
 }
 
 /* The grid gap sets the space, so remove the Starlight gap between page siblings. */
+.beacon-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px 10px;
+  align-items: center;
+}
+
+.beacon-list > *,
+.beacon-actions > * {
+  margin: 0;
+}
+
+.beacon-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.row-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--vp-c-brand-1);
+  background: transparent;
+  color: var(--vp-c-brand-1);
+  cursor: pointer;
+}
+
+.row-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .key-fields {
   display: grid;
   gap: 12px;

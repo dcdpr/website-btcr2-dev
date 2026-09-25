@@ -24,26 +24,29 @@ export function generateDemoKeyPair(modules: Btcr2Modules): DemoKeyPair {
   return demoKeyPair.value;
 }
 
+/** One beacon of a demo genesis document: its type, and the address type of the key. */
+export type GenesisBeacon = { type: BeaconType; addressType: BeaconAddressType };
+
 /** The input of a demo genesis document. The public key is hex (33 bytes). */
 export type GenesisSpec = {
   network: NetworkName;
   publicKey: string;
-  beaconType: BeaconType;
-  addressType: BeaconAddressType;
+  beacons: GenesisBeacon[];
 };
 
 export const demoGenesis = shallowRef<{ spec: GenesisSpec; document: Btcr2DidDocument } | null>(null);
 
 /**
  * Build a genesis document: one key with the four verification relationships,
- * and one beacon with the address of that key on the network. A CAS or SMT
- * beacon with this address has one party: the key signs each signal alone.
+ * and one beacon for each entry, with an address of that key on the network.
+ * A CAS or SMT beacon with this address has one party: the key signs each
+ * signal alone.
  */
 export function buildGenesis(api: DidBtcr2Api, spec: GenesisSpec): Btcr2DidDocument {
   const publicKey = hexToBytes(spec.publicKey);
   return api.btcr2.buildGenesisDocument({
     network: spec.network,
     verificationMethods: [{ publicKey }],
-    beacons: [{ type: spec.beaconType, publicKey, addressType: spec.addressType }],
+    beacons: spec.beacons.map((b) => ({ type: b.type, publicKey, addressType: b.addressType })),
   });
 }

@@ -67,7 +67,8 @@ fi
 - Demo: align the buttons and the form fields. The code preview and the
   JSON output do not wrap lines.
 - Demo: add a Key Pair and Genesis Document generator before Create.
-  The generator makes a Singleton, CAS, or SMT beacon with one party.
+  The generator makes one to three Singleton, CAS, or SMT beacons with
+  one party.
   Random Inputs in Create uses its output. Create, Update, and Deactivate
   support test networks only.
 

@@ -108,8 +108,7 @@ async function randomize() {
       genesis ?? {
         network: selectedNetwork.value as Network,
         publicKey: keys.publicKey,
-        beaconType: 'SingletonBeacon',
-        addressType: 'p2wpkh',
+        beacons: [{ type: 'SingletonBeacon', addressType: 'p2wpkh' }],
       },
     );
   }
