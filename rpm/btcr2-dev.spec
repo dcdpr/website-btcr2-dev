@@ -64,6 +64,8 @@ fi
   Diagrams (/diagrams/use-case/).
 - Show a k-of-n fallback next to the n-of-n signatures of Aggregate
   Beacons, with the risk of each choice.
+- Demo: align the buttons and the form fields. The code preview and the
+  JSON output do not wrap lines.
 
 * Thu Sep 24 2026 jintekc <github@jintek.consulting> - 2.1.0-1
 - Move the demos and the TypeScript docs to @did-btcr2/api 0.27.

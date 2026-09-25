@@ -83,7 +83,7 @@ function replacer(_key: string, value: unknown): unknown {
       <div class="response-wrap">
         <h4 class="sep">Response</h4>
         <CopyButton :text="responseText" label="Copy response" />
-        <pre class="out hljs">{{ responseText || (props.running ? '' : '—') }}</pre>
+        <pre class="out hljs" :class="{ prose: typeof props.response === 'string' }">{{ responseText || (props.running ? '' : '—') }}</pre>
       </div>
 
       <div v-if="props.extra" class="extra-wrap">
@@ -132,6 +132,13 @@ function replacer(_key: string, value: unknown): unknown {
   flex-wrap: wrap;
 }
 
+/* Starlight gives each sibling in the page content a top margin. The flex gap
+   sets the space here, so remove that margin. */
+.actions > *,
+.actions > :slotted(*) {
+  margin: 0;
+}
+
 .btn {
   padding: 8px 14px;
   border-radius: 6px;
@@ -177,9 +184,13 @@ function replacer(_key: string, value: unknown): unknown {
   margin: 14px 0 0;
 }
 
+/* Code does not wrap. A long line scrolls. */
+.snippet pre {
+  overflow-x: auto;
+}
+
 .snippet code {
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
 }
 
 .response-wrap,
@@ -191,12 +202,19 @@ function replacer(_key: string, value: unknown): unknown {
   margin: 16px 0 8px;
 }
 
+/* JSON output does not wrap. A long line scrolls. */
 .out {
   margin-top: 6px;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+  overflow-x: auto;
   min-height: 40px;
   font-size: 13px;
+}
+
+/* An error message is prose, so it wraps. */
+.out.prose {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .hljs {

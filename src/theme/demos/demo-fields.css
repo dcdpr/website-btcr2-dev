@@ -3,7 +3,24 @@
 .demo-row {
   display: grid;
   gap: 10px;
-  align-items: end;
+}
+
+/* A field in a row spans three row tracks: label, input, and hint. The subgrid
+   shares the tracks, so the inputs align if one field has a hint or a longer
+   label. The margin reset removes the Starlight gap between page siblings. */
+.demo-row > .demo-field {
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  margin: 0;
+}
+
+.demo-row > .demo-field > * + * {
+  margin-top: 6px;
+}
+
+.demo-row .demo-label {
+  align-self: end;
 }
 
 @media (min-width: 640px) {
