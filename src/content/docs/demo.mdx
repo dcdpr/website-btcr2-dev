@@ -90,7 +90,10 @@ specification default is 6.
 Updates are applied as [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902)
 documents. `api.updateDid(...)` resolves the current document, applies your
 patches, signs the update with your key, and broadcasts a beacon signal. The
-beacon address must hold a confirmed UTXO: fund it first. If you leave the
+signal spends one confirmed UTXO of the beacon address. That UTXO must hold more
+than 546 sats and more than the fee, so fund the address with one payment. The
+demo takes the fee rate for the next block from the Esplora API of the network,
+with a minimum of 1 sat/vB. If you leave the
 verification method or the beacon empty, the api uses the method that
 publishes your key and the beacon that holds the only spendable UTXO.
 

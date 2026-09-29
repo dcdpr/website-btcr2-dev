@@ -29,7 +29,12 @@ const keyFields = computed(() => [
 ]);
 
 // Genesis Document mode.
-const BEACON_TYPES: readonly BeaconType[] = ['SingletonBeacon', 'CASBeacon', 'SMTBeacon'];
+// Short labels, so the select fits a narrow screen. The values stay the beacon types.
+const BEACON_TYPES: readonly { value: BeaconType; label: string }[] = [
+  { value: 'SingletonBeacon', label: 'Singleton' },
+  { value: 'CASBeacon', label: 'CAS' },
+  { value: 'SMTBeacon', label: 'SMT' },
+];
 const ADDRESS_TYPES: readonly BeaconAddressType[] = ['p2pkh', 'p2wpkh', 'p2tr'];
 const network = ref<NetworkName>('mutinynet');
 const beacons = ref<GenesisBeacon[]>([{ type: 'SingletonBeacon', addressType: 'p2wpkh' }]);
@@ -185,7 +190,7 @@ function run() {
         <span />
         <template v-for="(beacon, i) in beacons" :key="i">
           <select class="demo-select" v-model="beacon.type" :aria-label="`Beacon ${i + 1} type`">
-            <option v-for="t in BEACON_TYPES" :key="t" :value="t">{{ t }}</option>
+            <option v-for="t in BEACON_TYPES" :key="t.value" :value="t.value">{{ t.label }}</option>
           </select>
           <select
             class="demo-select"
@@ -273,6 +278,17 @@ function run() {
   grid-template-columns: 1fr 1fr auto;
   gap: 6px 10px;
   align-items: center;
+}
+
+/* On a narrow screen, the type select takes the width of its longest label. */
+@media (max-width: 480px) {
+  .beacon-list {
+    grid-template-columns: max-content minmax(0, 1fr) auto;
+  }
+
+  .beacon-list .demo-select {
+    font-size: 13px;
+  }
 }
 
 .beacon-list > *,

@@ -121,6 +121,10 @@ async function run() {
       <p v-if="sidecarText && sidecarError" class="demo-error">
         JSON error: {{ sidecarError }}
       </p>
+      <p v-else class="demo-hint">
+        If the sidecar data does not have an update, the api looks for it in a CAS. A lookup in
+        the CAS can take up to 10 seconds.
+      </p>
     </div>
 
     <label class="demo-field">
