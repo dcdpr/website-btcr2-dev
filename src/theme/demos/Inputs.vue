@@ -77,10 +77,11 @@ const response = computed(() =>
 
 const snippet = computed(() => {
   if (mode.value === 'keys') {
-    return `import { SchnorrKeyPair } from '@did-btcr2/api';
+    return `import { createApi } from '@did-btcr2/api';
 
+const api = createApi();
 // A new secp256k1 key pair from a secure random source.
-const keys = SchnorrKeyPair.generate();
+const keys = api.crypto.keypair.generate();
 // Create takes the compressed public key (33 bytes).
 const publicKey = keys.publicKey.hex;
 // Update and Deactivate sign with the secret key (32 bytes).
@@ -91,7 +92,9 @@ console.log({ publicKey, secretKey });`;
 
 // The network sets the beacon addresses.
 const api = createApi({ btc: { network: '${network.value}' } });
-const publicKey = hexToBytes('${genesisPubKey.value || '<compressed-secp256k1-pubkey-hex>'}');
+// Your key pair. Its public key is ${genesisPubKey.value || '<compressed-secp256k1-pubkey-hex>'}.
+const keys = api.crypto.keypair.fromSecret('<32-byte-secret-key-hex>');
+const publicKey = keys.publicKey.compressed;
 // One key with the four verification relationships. Each beacon uses its
 // own address of the key. Every id uses the placeholder did:btcr2:_.
 const genesisDocument = api.btcr2.buildGenesisDocument({

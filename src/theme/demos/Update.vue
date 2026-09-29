@@ -87,27 +87,39 @@ const canRun = computed(
 const snippet = computed(() => {
   const net = network.value || '<network of the DID>';
   const sidecar = normalizeSidecar(sidecarText.value);
-  const lines = [
-    `  did: '${did.value || '<did>'}',`,
-    ...(props.op === 'update' ? [`  patches: ${patchesText.value.trim() || '[]'},`] : []),
-    `  signer: new LocalSigner(hexToBytes('<32-byte-secret-key-hex>')),`,
+  const options = [
     ...(verificationMethodId.value ? [`  verificationMethodId: '${verificationMethodId.value}',`] : []),
-    ...(beaconId.value ? [`  beaconId: '${beaconId.value}',`] : []),
   ];
   const resolution = [
     ...(sidecar ? [`sidecar: ${JSON.stringify(sidecar)}`] : []),
     ...(minConf.value !== 6 ? [`minConf: ${minConf.value}`] : []),
   ];
-  if (resolution.length) lines.push(`  resolutionOptions: { ${resolution.join(', ')} },`);
-  const call = props.op === 'deactivate' ? 'deactivateDid' : 'updateDid';
-  return `import { createApi, LocalSigner } from '@did-btcr2/api';
+  if (resolution.length) options.push(`  resolutionOptions: { ${resolution.join(', ')} },`);
+  const announce = [...(beaconId.value ? [`beaconId: '${beaconId.value}'`] : []), 'feeRate'];
+  options.push(`  announce: { ${announce.join(', ')} },`);
+  const args = [
+    `'${did.value || '<did>'}'`,
+    ...(props.op === 'update' ? [patchesText.value.trim() || '[]'] : []),
+    'signer',
+  ];
+  const [call, change] =
+    props.op === 'deactivate'
+      ? ['deactivateDid', 'adds the deactivation patch']
+      : ['updateDid', 'applies the patches'];
+  return `import { createApi } from '@did-btcr2/api';
 
 const api = createApi({ btc: { network: '${net}' } });
-// The api resolves the current document, applies the patches, signs the
+// The key manager of the api holds the key and gives the signer.
+const keyPair = api.crypto.keypair.fromSecret('<32-byte-secret-key-hex>');
+const signer = api.kms.signer(api.kms.import(keyPair));
+// The fee rate (sat/vB) for the next block, from the Esplora API of the network.
+const estimates = await (await fetch(\`\${api.btc.rest.config.host}/fee-estimates\`)).json();
+const feeRate = Math.max(estimates['1'], 1);
+// The api resolves the current document, ${change}, signs the
 // update, and broadcasts a beacon signal. The beacon address must hold a
 // confirmed UTXO.
-const result = await api.${call}({
-${lines.join('\n')}
+const result = await api.${call}(${args.join(', ')}, {
+${options.join('\n')}
 });
 // result: { signedUpdate, txid, announcement?, proof?, publishedToCas }
 console.log(result);`;

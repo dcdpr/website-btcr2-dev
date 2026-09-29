@@ -9,7 +9,6 @@ import createExternal from '../../../../examples/ts/create-external.ts?raw';
 import resolveExample from '../../../../examples/ts/resolve.ts?raw';
 import updateExample from '../../../../examples/ts/update.ts?raw';
 import deactivateExample from '../../../../examples/ts/deactivate.ts?raw';
-import browserExample from '../../../../examples/ts/browser.ts?raw';
 
 `@did-btcr2/api` is the SDK of the TypeScript implementation. `createApi()`
 returns one facade for the DID operations, the Bitcoin connection, key
@@ -23,9 +22,12 @@ directly.
 npm install @did-btcr2/api
 ```
 
-The package re-exports what the examples on this page use: `SchnorrKeyPair`,
-`LocalSigner`, and the genesis document helpers. It needs Node.js 22 or newer,
-or a browser.
+The package exports only its facade
+([ADR 132](https://github.com/dcdpr/did-btcr2-js/blob/main/docs/adr/132-the-api-exports-only-its-facade-and-a-sub-facade-function-does-each-crud-step.md)).
+Each call on this page starts at the object that `createApi()` returns: its
+methods and its sub-facades (`api.crypto`, `api.kms`, `api.did`, `api.btcr2`,
+`api.btc`, `api.cas`, and `api.smt`). The package needs Node.js 22 or newer, or
+a browser.
 
 ## Configure
 
@@ -38,8 +40,9 @@ import { createApi } from '@did-btcr2/api';
 const api = createApi({
   // The Bitcoin network. Each network has a default REST (Esplora) host.
   btc: { network: 'mutinynet' },
-  // Optional: the CAS. The default is the read-only gateway https://ipfs.io.
-  cas: { gateway: 'https://trustless-gateway.link' },
+  // Optional: the CAS. The default is the read-only gateway
+  // https://trustless-gateway.link, with a timeout of 30 seconds.
+  cas: { gateway: 'https://trustless-gateway.link', timeoutMs: 10_000 },
 });
 ```
 
@@ -109,8 +112,9 @@ output, so the beacon address must hold a confirmed UTXO. The initial document
 of a `k1` DID has three beacons, and `api.btcr2.getBeacons()` gives their
 addresses. Fund one of them, and wait for one confirmation.
 
-The signer is any `Signer`: `LocalSigner` for a secret key in memory, or
-`api.kms.signer(keyId)` for a key in the key manager.
+The signer comes from the key manager of the api. `api.kms.import(keyPair)`
+keeps a key pair and returns its key id, and `api.kms.signer(keyId)` gives the
+signer.
 
 <Code code={updateExample} lang="ts" title="update.ts" />
 
@@ -132,7 +136,7 @@ const api = createApi({
   btc: { network: 'mutinynet' },
   cas: { rpcUrl: 'http://127.0.0.1:5001' }, // the RPC endpoint of an IPFS node
 });
-const result = await api.updateDid({ did, patches, signer, publishToCas: 'auto' });
+const result = await api.updateDid(did, patches, signer, { announce: { publishToCas: 'auto' } });
 console.log(result.publishedToCas); // { update: true, announcement: false }
 ```
 
@@ -146,15 +150,16 @@ Deactivation is an update with the patch
 
 ## Use in a browser
 
-The browser bundle needs a small setup for public endpoints. The executor below
-removes a header that causes a CORS failure on mempool.space, and it keeps chain
-state out of the browser HTTP cache. The [Demo](/demo/) uses the same setup.
-
-<Code code={browserExample} lang="ts" title="browser.ts" />
+The default configuration works in a browser
+([ADR 124](https://github.com/dcdpr/did-btcr2-js/blob/main/docs/adr/124-default-config-works-in-a-browser.md)).
+A GET request has no `Content-Type` header, so the browser sends no CORS
+preflight. Chain data skips the HTTP cache, and the default CAS gateway allows
+CORS. The [Demo](/demo/) uses the default configuration and sets only the
+timeouts.
 
 ## Reference
 
 * [`@did-btcr2/api` README](https://github.com/dcdpr/did-btcr2-js/tree/main/packages/api):
-  all exports, the fluent `UpdateBuilder`, and the write-path rules.
+  the exports, an example for each operation, and the architecture principles.
 * [`@did-btcr2/api` on npm](https://www.npmjs.com/package/@did-btcr2/api) and its
   [changelog](https://github.com/dcdpr/did-btcr2-js/blob/main/packages/api/CHANGELOG.md).

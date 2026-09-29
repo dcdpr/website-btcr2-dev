@@ -67,7 +67,9 @@ const snippet = computed(() => {
 
 // A new DID takes the network of the Bitcoin connection.
 const api = createApi({ btc: { network: '${net}' } });
-const did = api.createDid('deterministic', hexToBytes('${hex}'));
+// Your key pair. Its public key is ${hex}.
+const keys = api.crypto.keypair.fromSecret('<32-byte-secret-key-hex>');
+const did = api.createDid('deterministic', keys.publicKey.compressed);
 // Fund one of these addresses before the first update.
 const beacons = api.btcr2.getBeacons(api.btcr2.getInitialDocument(did));
 console.log({ did, beacons });`;
