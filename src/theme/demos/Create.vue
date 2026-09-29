@@ -17,7 +17,7 @@ import './demo-fields.css';
 const networks = TEST_NETWORKS;
 type Network = NetworkName;
 
-const { ready, modules, createApiForNetwork } = useDidBtcr2();
+const { ready, modules, createApiForNetwork, getLocalApi } = useDidBtcr2();
 
 const selectedNetwork = ref<Network | ''>('');
 const idType = ref<'KEY' | 'EXTERNAL' | ''>('');
@@ -96,7 +96,7 @@ async function randomize() {
   idType.value = Math.random() < 0.5 ? 'KEY' : 'EXTERNAL';
   // Use the key pair and the genesis document of the Inputs demo, so the
   // user has the secret key that updates the new DID.
-  const keys = demoKeyPair.value ?? generateDemoKeyPair(modules.value);
+  const keys = demoKeyPair.value ?? generateDemoKeyPair(getLocalApi());
   if (idType.value === 'KEY') {
     pubKeyHex.value = keys.publicKey;
     genesisDocText.value = '';

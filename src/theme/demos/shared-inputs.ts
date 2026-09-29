@@ -6,7 +6,6 @@ import type {
   DidBtcr2Api,
   NetworkName,
 } from '@did-btcr2/api';
-import type { Btcr2Modules } from '../composables/useDidBtcr2';
 import { hexToBytes } from './hex';
 
 // The demo islands on one page load this module once, so they share this
@@ -18,8 +17,9 @@ export type DemoKeyPair = { publicKey: string; secretKey: string };
 
 export const demoKeyPair = shallowRef<DemoKeyPair | null>(null);
 
-export function generateDemoKeyPair(modules: Btcr2Modules): DemoKeyPair {
-  const keys = modules.api.SchnorrKeyPair.generate();
+/** Generate a key pair with `api.crypto.keypair` and share it. Use the local api. */
+export function generateDemoKeyPair(api: DidBtcr2Api): DemoKeyPair {
+  const keys = api.crypto.keypair.generate();
   demoKeyPair.value = { publicKey: keys.publicKey.hex, secretKey: keys.secretKey.hex };
   return demoKeyPair.value;
 }

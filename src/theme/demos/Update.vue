@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import DemoCard from '../components/DemoCard.vue';
-import { useDidBtcr2 } from '../composables/useDidBtcr2';
-import { hexToBytes, isHex } from './hex';
+import { estimateFeeRate, useDidBtcr2 } from '../composables/useDidBtcr2';
+import { isHex } from './hex';
 import { formatError } from './errors';
 import { normalizeSidecar } from './sidecar';
 import './demo-fields.css';
@@ -15,7 +15,7 @@ const props = withDefaults(
   { op: 'update' },
 );
 
-const { ready, modules, createApiForNetwork, networkOf } = useDidBtcr2();
+const { ready, createApiForNetwork, networkOf } = useDidBtcr2();
 
 const did = ref('');
 const patchesText = ref(
@@ -112,27 +112,31 @@ console.log(result);`;
 });
 
 async function run() {
-  if (!modules.value || !canRun.value || !network.value) return;
+  if (!canRun.value || !network.value) return;
   running.value = true;
   response.value = null;
   nextSidecar.value = null;
   const api = createApiForNetwork(network.value);
   try {
     const sidecar = normalizeSidecar(sidecarText.value);
-    const params = {
-      did: did.value,
-      signer: new modules.value.api.LocalSigner(hexToBytes(signingMaterialHex.value)),
+    const keyPair = api.crypto.keypair.fromSecret(signingMaterialHex.value);
+    const signer = api.kms.signer(api.kms.import(keyPair));
+    const feeRate = await estimateFeeRate(api);
+    const options = {
       ...(verificationMethodId.value ? { verificationMethodId: verificationMethodId.value } : {}),
-      ...(beaconId.value ? { beaconId: beaconId.value } : {}),
       resolutionOptions: {
         ...(sidecar ? { sidecar } : {}),
         ...(minConf.value !== 6 ? { minConf: minConf.value } : {}),
       },
+      announce: {
+        ...(beaconId.value ? { beaconId: beaconId.value } : {}),
+        ...(feeRate !== undefined ? { feeRate } : {}),
+      },
     };
     const result =
       props.op === 'deactivate'
-        ? await api.deactivateDid(params)
-        : await api.updateDid({ ...params, patches: JSON.parse(patchesText.value) });
+        ? await api.deactivateDid(did.value, signer, options)
+        : await api.updateDid(did.value, JSON.parse(patchesText.value), signer, options);
     response.value = result;
     // A resolver needs every signed update of the DID that no CAS holds.
     // Add this update (and its CAS announcement or SMT proof, if any) to

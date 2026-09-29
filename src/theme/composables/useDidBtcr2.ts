@@ -1,10 +1,10 @@
 import { ref, shallowRef, type Ref } from 'vue';
-import type { DidBtcr2Api, HttpExecutor, NetworkName } from '@did-btcr2/api';
+import type { DidBtcr2Api, NetworkName } from '@did-btcr2/api';
 
 // The @did-btcr2/api package is loaded dynamically so Astro SSR never
 // evaluates it at build time; the demos are strictly client-side. The
-// package is pure JS (no WASM) and runs in Node and browsers. It re-exports
-// the keypair, signer, and genesis document helpers that the demos use.
+// package is pure JS (no WASM) and runs in Node and browsers. It exports
+// only its facade: the demos call `createApi` and the sub-facades of the api.
 // The module is loaded once per page and shared across DemoCard instances.
 
 type ApiNamespace = typeof import('@did-btcr2/api');
@@ -55,44 +55,37 @@ function loadModules(): Promise<Btcr2Modules> {
   return promise;
 }
 
-// The @did-btcr2/bitcoin REST client sends `Content-Type: application/json`
-// on every GET. A GET has no body, so the header has no function, but it makes
-// the request non-simple. The browser then sends a CORS preflight, and the
-// mempool.space OPTIONS handler answers 404. This executor removes the header
-// from GET requests, so the browser sends no preflight. POST /tx uses
-// `text/plain`, which is CORS-safelisted. With this executor, all networks
-// use the library's default REST hosts, and the site needs no proxy.
-// Remove it when upstream stops sending the header on GET.
-const REQUEST_TIMEOUT_MS = 30_000;
+// The default Bitcoin executor of the api has no timeout, so the demos set
+// one. A CAS read of an object that the CAS does not hold waits for the full
+// CAS timeout. The api default is 30 seconds; the demos wait 10 seconds.
+const BTC_TIMEOUT_MS = 30_000;
+const CAS_TIMEOUT_MS = 10_000;
 
-const corsSafeExecutor: HttpExecutor = (req) => {
-  const headers = { ...req.headers };
-  if (req.method === 'GET') {
-    for (const name of Object.keys(headers)) {
-      if (name.toLowerCase() === 'content-type') delete headers[name];
-    }
+// An api with no Bitcoin connection, for the local operations: keys,
+// identifiers, and documents. The demos on one page share it.
+let localApi: DidBtcr2Api | null = null;
+
+/**
+ * The fee rate, in sat/vB, of a transaction for the next block. The value
+ * comes from the Esplora route `/fee-estimates` of the network of the api.
+ * The api has no fee estimate of its own: without `announce.feeRate`, it
+ * uses a fixed 5 sat/vB. The result is 1 sat/vB or more, the minimum relay
+ * fee of most nodes. If the request fails, the result is undefined, and the
+ * api uses its default.
+ */
+export async function estimateFeeRate(api: DidBtcr2Api): Promise<number | undefined> {
+  try {
+    const res = await fetch(`${api.btc.rest.config.host}/fee-estimates`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(BTC_TIMEOUT_MS),
+    });
+    if (!res.ok) return undefined;
+    const rate = ((await res.json()) as Record<string, unknown>)['1'];
+    return typeof rate === 'number' && Number.isFinite(rate) ? Math.max(rate, 1) : undefined;
+  } catch {
+    return undefined;
   }
-  // The api ignores `timeoutMs` when a custom executor is set, so the
-  // executor sets its own timeout.
-  // Chain state must never come from a cache. mutinynet.com sends
-  // `max-age=14400` on /blocks/tip/height, and its CDN serves a tip that
-  // can be one block old. With a stale tip, a new beacon signal gets no
-  // confirmations, and resolution ignores it. `no-store` skips the browser
-  // cache, and a unique query string skips the CDN cache.
-  const url = req.url.endsWith('/blocks/tip/height') ? `${req.url}?_=${Date.now()}` : req.url;
-  return fetch(url, {
-    method: req.method,
-    headers,
-    body: req.body,
-    cache: 'no-store',
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-};
-
-// The library default CAS gateway (ipfs.io) is in sunset. Its redirect to
-// trustless-gateway.link has no CORS header, so browser CAS reads fail.
-// Read CAS content from the trustless gateway directly.
-const CAS_GATEWAY = 'https://trustless-gateway.link';
+}
 
 export type UseDidBtcr2 = {
   ready: Ref<boolean>;
@@ -101,6 +94,8 @@ export type UseDidBtcr2 = {
   modules: Ref<Btcr2Modules | null>;
   /** Create a configured DidBtcr2Api instance for the given network. Caller owns disposal. */
   createApiForNetwork: (network: NetworkName) => DidBtcr2Api;
+  /** The shared api with no Bitcoin connection, for keys, identifiers, and documents. Do not dispose it. */
+  getLocalApi: () => DidBtcr2Api;
   /** The network that a did:btcr2 identifier encodes, or null if it does not decode. */
   networkOf: (did: string) => NetworkName | null;
 };
@@ -133,10 +128,19 @@ export function useDidBtcr2(): UseDidBtcr2 {
     if (!modules.value) {
       throw new Error('@did-btcr2 modules not loaded yet - await load() first');
     }
+    // The api applies its default CAS gateway only if `cas` is absent, so
+    // a config with a timeout must also name the gateway.
     return modules.value.api.createApi({
-      btc: { network, executor: corsSafeExecutor },
-      cas: { gateway: CAS_GATEWAY },
+      btc: { network, timeoutMs: BTC_TIMEOUT_MS },
+      cas: { gateway: modules.value.api.DEFAULT_CAS_GATEWAY, timeoutMs: CAS_TIMEOUT_MS },
     });
+  }
+
+  function getLocalApi(): DidBtcr2Api {
+    if (!modules.value) {
+      throw new Error('@did-btcr2 modules not loaded yet - await load() first');
+    }
+    return (localApi ??= modules.value.api.createApi());
   }
 
   // The api refuses to resolve or update a DID on a connection for a
@@ -144,12 +148,12 @@ export function useDidBtcr2(): UseDidBtcr2 {
   function networkOf(did: string): NetworkName | null {
     if (!modules.value || !did.startsWith('did:btcr2:')) return null;
     try {
-      const { network } = modules.value.api.Identifier.decode(did);
+      const { network } = getLocalApi().did.decode(did);
       return (NETWORKS as readonly string[]).includes(network) ? (network as NetworkName) : null;
     } catch {
       return null;
     }
   }
 
-  return { ready, error, load, modules, createApiForNetwork, networkOf };
+  return { ready, error, load, modules, createApiForNetwork, getLocalApi, networkOf };
 }

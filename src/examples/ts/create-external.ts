@@ -1,9 +1,9 @@
 // Create an external `did:btcr2:x1…` identifier from a genesis document.
 // The identifier encodes the SHA-256 hash of the canonical document.
-import { createApi, SchnorrKeyPair } from '@did-btcr2/api';
+import { createApi } from '@did-btcr2/api';
 
 const api = createApi({ btc: { network: 'mutinynet' } });
-const keys = SchnorrKeyPair.generate();
+const keys = api.crypto.keypair.generate();
 
 // One key with all four verification relationships, and one Singleton
 // beacon at the P2WPKH address of that key. The builder uses the

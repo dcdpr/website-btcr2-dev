@@ -15,7 +15,7 @@ import {
 } from './shared-inputs';
 import './demo-fields.css';
 
-const { ready, modules, createApiForNetwork } = useDidBtcr2();
+const { ready, modules, createApiForNetwork, getLocalApi } = useDidBtcr2();
 
 const mode = ref<'keys' | 'genesis'>('keys');
 
@@ -108,10 +108,10 @@ console.log(genesisDocument);`;
 function run() {
   if (!modules.value) return;
   if (mode.value === 'keys') {
-    generateDemoKeyPair(modules.value);
+    generateDemoKeyPair(getLocalApi());
     return;
   }
-  const publicKey = genesisPubKey.value || generateDemoKeyPair(modules.value).publicKey;
+  const publicKey = genesisPubKey.value || generateDemoKeyPair(getLocalApi()).publicKey;
   const spec = {
     network: network.value,
     publicKey,
