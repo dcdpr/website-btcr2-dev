@@ -13,15 +13,23 @@ export type Btcr2Modules = {
   api: ApiNamespace;
 };
 
-/** The networks that the api accepts, in the order the demos list them. */
+/**
+ * The networks of the demos, in the order the demos list them. The demos use
+ * the public REST hosts of the api. `regtest` needs a local node, so it is
+ * not in the list.
+ */
 export const NETWORKS: readonly NetworkName[] = [
   'bitcoin',
   'testnet3',
   'testnet4',
   'signet',
   'mutinynet',
-  'regtest',
 ];
+
+/** True if the demos support the network. */
+export function isDemoNetwork(network: NetworkName): boolean {
+  return NETWORKS.includes(network);
+}
 
 /**
  * The networks on which the demos create and update DIDs. Mainnet is not in
@@ -96,7 +104,10 @@ export type UseDidBtcr2 = {
   createApiForNetwork: (network: NetworkName) => DidBtcr2Api;
   /** The shared api with no Bitcoin connection, for keys, identifiers, and documents. Do not dispose it. */
   getLocalApi: () => DidBtcr2Api;
-  /** The network that a did:btcr2 identifier encodes, or null if it does not decode. */
+  /**
+   * The network that a did:btcr2 identifier encodes, or null if it does not
+   * decode. The network can be one that the demos do not support.
+   */
   networkOf: (did: string) => NetworkName | null;
 };
 
@@ -148,8 +159,7 @@ export function useDidBtcr2(): UseDidBtcr2 {
   function networkOf(did: string): NetworkName | null {
     if (!modules.value || !did.startsWith('did:btcr2:')) return null;
     try {
-      const { network } = getLocalApi().did.decode(did);
-      return (NETWORKS as readonly string[]).includes(network) ? (network as NetworkName) : null;
+      return getLocalApi().did.decode(did).network as NetworkName;
     } catch {
       return null;
     }

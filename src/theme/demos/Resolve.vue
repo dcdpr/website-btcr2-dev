@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import DemoCard from '../components/DemoCard.vue';
-import { useDidBtcr2 } from '../composables/useDidBtcr2';
+import { isDemoNetwork, useDidBtcr2 } from '../composables/useDidBtcr2';
 import { formatError } from './errors';
 import { normalizeSidecar } from './sidecar';
 import './demo-fields.css';
@@ -20,6 +20,7 @@ const response = ref<unknown>(null);
 const isExternal = computed(() => did.value.startsWith('did:btcr2:x1'));
 // `ready` is part of the dependency so the network shows once the api loads.
 const network = computed(() => (ready.value ? networkOf(did.value) : null));
+const isUnsupported = computed(() => !!network.value && !isDemoNetwork(network.value));
 const isMinConfValid = computed(() => Number.isInteger(minConf.value) && minConf.value >= 1);
 
 watch(sidecarText, () => {
@@ -33,7 +34,9 @@ watch(sidecarText, () => {
   }
 });
 
-const canRun = computed(() => !!network.value && !sidecarError.value && isMinConfValid.value);
+const canRun = computed(
+  () => !!network.value && !isUnsupported.value && !sidecarError.value && isMinConfValid.value,
+);
 
 const snippet = computed(() => {
   const id = did.value || 'did:btcr2:k1...';
@@ -96,6 +99,10 @@ async function run() {
       />
       <p v-if="did && ready && !network" class="demo-warn">
         Not a valid did:btcr2 identifier.
+      </p>
+      <p v-else-if="isUnsupported" class="demo-warn">
+        This demo does not support {{ network }}. Use the api with a local node for a
+        {{ network }} DID.
       </p>
       <p v-else-if="network" class="demo-hint">Network (from the DID): {{ network }}</p>
     </div>

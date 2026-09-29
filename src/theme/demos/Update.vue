@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import DemoCard from '../components/DemoCard.vue';
-import { estimateFeeRate, useDidBtcr2 } from '../composables/useDidBtcr2';
+import { estimateFeeRate, isDemoNetwork, useDidBtcr2 } from '../composables/useDidBtcr2';
 import { isHex } from './hex';
 import { formatError } from './errors';
 import { normalizeSidecar } from './sidecar';
@@ -40,6 +40,7 @@ const network = computed(() => (ready.value ? networkOf(did.value) : null));
 // The demo does not broadcast on mainnet: the page must not handle keys that
 // control real funds.
 const isMainnet = computed(() => network.value === 'bitcoin');
+const isUnsupported = computed(() => !!network.value && !isDemoNetwork(network.value));
 const isMinConfValid = computed(() => Number.isInteger(minConf.value) && minConf.value >= 1);
 
 watch(patchesText, () => {
@@ -76,6 +77,7 @@ const canRun = computed(
   () =>
     !!network.value &&
     !isMainnet.value &&
+    !isUnsupported.value &&
     (props.op === 'deactivate' || (!!patchesText.value.trim() && !patchesError.value)) &&
     !sidecarError.value &&
     isMinConfValid.value &&
@@ -191,6 +193,10 @@ const extra = computed(() =>
       />
       <p v-if="did && ready && !network" class="demo-warn">
         Not a valid did:btcr2 identifier.
+      </p>
+      <p v-else-if="isUnsupported" class="demo-warn">
+        This demo does not support {{ network }}. Use the api with a local node for a
+        {{ network }} DID.
       </p>
       <p v-else-if="isMainnet" class="demo-warn">
         This demo does not broadcast on mainnet (bitcoin). Use a DID on a test network.
