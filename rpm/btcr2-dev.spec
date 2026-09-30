@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        2.2.0
+Version:        2.3.0
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -55,6 +55,17 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
+* Wed Sep 30 2026 jintekc <github@jintek.consulting> - 2.3.0-1
+- Update to @did-btcr2/api 0.29. The site code uses only the api facade.
+- Demo: remove the CORS workaround. The default configuration of the api
+  works in a browser.
+- Demo: get the fee rate of an update from the fee estimate of the
+  network, not a fixed 5 sat/vB.
+- Demo: remove regtest. For a regtest DID, the demo shows a message.
+- Demo: stop a CAS lookup after 10 seconds, and tell the user.
+- Demo: show short beacon type labels, so the select fits a narrow screen.
+- SDK page: show the facade calls and the new update signatures.
+
 * Fri Sep 25 2026 jintekc <github@jintek.consulting> - 2.2.0-1
 - Align the diagrams with the current did:btcr2 specification terms and
   algorithms. Split the Diagrams page into six pages and add new diagrams.
