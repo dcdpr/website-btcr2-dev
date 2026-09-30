@@ -7,7 +7,8 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 `@did-btcr2/cli` is the command-line tool of the TypeScript implementation. The
 `btcr2` command wraps the [SDK](/impls/ts/sdk/). It also keeps your keys in an
-encrypted keystore and your endpoints in a config file.
+encrypted keystore, your endpoints in a config file, and a record of each of
+your identifiers.
 
 ## Install
 
@@ -16,7 +17,7 @@ npm install -g @did-btcr2/cli
 btcr2 --version
 ```
 
-The CLI needs Node.js 22 or newer. To run the CLI with no install, use
+The CLI needs Node.js 24.7 or newer. To run the CLI with no install, use
 `npx @did-btcr2/cli <command>`.
 
 ## Configure
@@ -29,14 +30,16 @@ btcr2 init
 keystore. It asks for a new passphrase. A second run changes nothing.
 
 The DID gives the network to `resolve`, `update`, and `deactivate`. `create` and
-`genesis build` take the network from `-n`. A setting comes from the first of: a
-flag, an environment variable, the profile of the network in `config.json`, the
-default of the network. The default REST hosts are the same as in the
-[SDK](/impls/ts/sdk/#configure).
+`genesis build` take the network from `-n`, else from the active profile, else
+from `defaults.network` in `config.json`. A setting comes from the first of: a
+flag, an environment variable, the profile in `config.json`, `defaults.cas` in
+`config.json` (CAS settings only), the default of the network. The default REST
+hosts are the same as in the [SDK](/impls/ts/sdk/#configure).
 
 ```sh
-# Optional: the CAS. The default is the read-only gateway https://ipfs.io.
-btcr2 config set profiles.mutinynet.cas.gateway 'https://trustless-gateway.link'
+# Optional: your own IPFS node as the CAS of all networks. The default CAS is
+# the read-only gateway https://trustless-gateway.link.
+btcr2 config set defaults.cas.rpcUrl 'http://127.0.0.1:5001'
 ```
 
 Other settings:
@@ -53,6 +56,12 @@ encrypted with argon2id and XChaCha20-Poly1305. The CLI gets the passphrase from
 then a prompt. `btcr2 keystore unlock --ttl 2h` keeps a session, and
 `btcr2 keystore lock` ends it.
 
+The CLI keeps one record for each identifier in `~/.btcr2/dids.json`: a name,
+the keys, the signing key, and the sidecar data. The record holds no secret key.
+`create`, `update`, and `deactivate` write the record. `resolve`, `update`, and
+`deactivate` accept the name of a record in `-i`, and use its sidecar data.
+`btcr2 identifier list` shows the records.
+
 ## Create
 
 Creation is offline: no chain read and no fee. There are two identifier types:
@@ -68,31 +77,37 @@ Creation is offline: no chain read and no fee. There are two identifier types:
   <TabItem label="Deterministic (k1)">
 
 ```sh
-btcr2 create -n mutinynet
+btcr2 create -n mutinynet --name alice --verbose
 ```
 
-`create` makes a new key, stores it in the keystore, and makes it the active
-key. It prints the DID and the beacon address to fund.
+`create` uses the default key. If the keystore has no key, `create` makes a new
+key, stores it in the keystore, and makes it the active key. The command prints
+the DID. `--verbose` also prints the key and the beacon address to fund. The
+record `alice` keeps the key that signs the updates.
 
   </TabItem>
   <TabItem label="External (x1)">
 
 ```sh
-btcr2 key generate --name alice
+btcr2 key generate --name alice-key
 cat > spec.json <<'JSON'
 {
-  "verificationMethods": [{ "key": "alice" }],
+  "verificationMethods": [{ "key": "alice-key" }],
   "services": [
     { "id": "#website", "type": "LinkedDomains", "serviceEndpoint": "https://example.com" }
   ]
 }
 JSON
 btcr2 genesis build -n mutinynet --spec spec.json --out genesis.json
+btcr2 create -t x -n mutinynet --document genesis.json --name alice
+btcr2 identifier add alice -k alice-key
 ```
 
 `genesis build` writes the genesis document to `genesis.json`. It prints the DID
-and the beacon address to fund. Use a key that no other DID uses: two DIDs with
-one key share a beacon address, and Bitcoin then links them.
+and the beacon address to fund. `create -t x` records the DID and its genesis
+document as `alice`, and `identifier add -k` sets the key that signs the
+updates. Use a key that no other DID uses: two DIDs with one key share a beacon
+address, and Bitcoin then links them.
 
   </TabItem>
 </Tabs>
@@ -100,7 +115,7 @@ one key share a beacon address, and Bitcoin then links them.
 ## Resolve
 
 ```sh
-btcr2 resolve -i did:btcr2:k1q5p...
+btcr2 resolve -i alice
 ```
 
 The CLI reads the beacon signals from the network of the DID and applies each
@@ -109,33 +124,41 @@ and its metadata (`versionId`, `confirmations`, `deactivated`).
 
 Sidecar data comes from the DID controller:
 
-* An `x1` DID needs its genesis document: `--genesis-document genesis.json`.
-* A DID with updates needs every signed update, unless a CAS holds them. Pass
-  them in the resolution options: `-r '{"sidecar":{"updates":[...]}}'`, or `-p`
-  with a JSON file.
+* An `x1` DID needs its genesis document.
+* A DID with updates needs every signed update, unless a CAS holds them.
 
-`versionId` and `versionTime` in the resolution options select an earlier
-version of the document.
+For your own DID, the record supplies the sidecar data. For another DID, get
+the sidecar data file from its controller and add it to a record:
+`btcr2 identifier add <did> --sidecar sidecar.json`. The flags
+`--genesis-document`, `-r` (inline JSON), and `-p` (a JSON file) also supply
+sidecar data. `versionId` and `versionTime` in the resolution options select an
+earlier version of the document.
 
 ## Update
 
 An update is a [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902) to the
-DID document. The CLI signs the update with the active key and broadcasts a
-beacon signal. The signal is a Bitcoin transaction with the hash of the update in
-its `OP_RETURN` output, so the beacon address must hold a confirmed UTXO. Fund
-the beacon address that `create` printed, and wait for one confirmation.
+DID document. The CLI signs the update and broadcasts a beacon signal. The
+signal is a Bitcoin transaction with the hash of the update in its `OP_RETURN`
+output, so the beacon address must hold confirmed bitcoin. The value must be
+more than the fee. Fund the beacon address that `create --verbose` printed, and
+wait for one confirmation.
 
 ```sh
-DID=did:btcr2:k1q5p...   # your DID
+DID=$(btcr2 -o json identifier show alice | jq -r '.data.identifier')
 PATCH=$(jq -nc --arg id "$DID#website" \
   '[{op: "add", path: "/service/-", value: {id: $id, type: "LinkedDomains", serviceEndpoint: "https://example.com"}}]')
-btcr2 -o json update -i "$DID" -p "$PATCH" | jq '.data.signedUpdate' > signed-update.json
+btcr2 update -i alice -p "$PATCH"
 ```
 
-Keep `signed-update.json`. Bitcoin holds only its hash. A resolver needs the
-signed update as sidecar data, unless you publish it to a CAS. `-m` (the
-verification method) and `-b` (the beacon) are optional: the CLI uses the method
-that publishes the signing key and the beacon that holds the only spendable UTXO.
+The key of the record signs the update. `--signing-key <ref>` selects another
+key. The CLI adds the signed update to the record. Bitcoin holds only its hash:
+a resolver needs the signed update as sidecar data, unless you publish it to a
+CAS. `btcr2 identifier sidecar alice --out sidecar.json` writes the sidecar data
+file for the relying parties.
+
+`-m` (the verification method) and `-b` (the beacon) are optional: the CLI uses
+the method that publishes the signing key and the beacon that can fund the
+signal. `--fee-rate` sets the fee rate in sat/vB. The default is 5 sat/vB.
 
 ### Publish to a CAS
 
@@ -147,7 +170,7 @@ from the CAS with no sidecar data. `always` refuses the update if no writable CA
 is configured.
 
 ```sh
-btcr2 update -i "$DID" -p "$PATCH" --publish-to-cas auto --cas-rpc-url http://127.0.0.1:5001
+btcr2 update -i alice -p "$PATCH" --publish-to-cas auto --cas-rpc-url http://127.0.0.1:5001
 ```
 
 ## Deactivate
@@ -157,18 +180,17 @@ Deactivation is an update with the patch
 `btcr2 deactivate` adds the patch for you. Deactivation is permanent.
 
 ```sh
-btcr2 -o json deactivate -i "$DID" \
-  -r "$(jq -c '{sidecar: {updates: [.]}}' signed-update.json)" \
-  | jq '.data.signedUpdate' > signed-deactivate.json
+btcr2 deactivate -i alice
 ```
 
-Add the deactivation to the sidecar data: a resolver needs it to see the
-deactivation.
+The record supplies the signing key and the sidecar data of the earlier updates.
+The CLI adds the deactivation to the record. A resolver needs it as sidecar data
+to see the deactivation, so give the relying parties a new sidecar data file.
 
 ## Use in scripts
 
 * `-o json` prints `{ "action": ..., "data": ... }`. Hints go to stderr.
-  `--quiet` removes them.
+  `-q` (`--quiet`) removes them.
 * The exit code is `0` on success and `1` on an error.
 * A script with no terminal needs `BTCR2_KEYSTORE_PASSPHRASE` or
   `--passphrase-file` to sign.
