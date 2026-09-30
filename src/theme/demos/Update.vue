@@ -144,7 +144,7 @@ async function run() {
       },
       announce: {
         ...(beaconId.value ? { beaconId: beaconId.value } : {}),
-        ...(feeRate !== undefined ? { feeRate } : {}),
+        feeRate,
       },
     };
     const result =

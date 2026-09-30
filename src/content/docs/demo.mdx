@@ -93,7 +93,7 @@ patches, signs the update with your key, and broadcasts a beacon signal. The
 signal spends one confirmed UTXO of the beacon address. That UTXO must hold more
 than 546 sats and more than the fee, so fund the address with one payment. The
 demo takes the fee rate for the next block from the Esplora API of the network,
-with a minimum of 1 sat/vB. If you leave the
+with a minimum of 1 sat/vB. If that request fails, the demo uses 1 sat/vB. If you leave the
 verification method or the beacon empty, the api uses the method that
 publishes your key and the beacon that holds the only spendable UTXO.
 

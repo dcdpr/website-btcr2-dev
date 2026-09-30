@@ -73,25 +73,28 @@ const CAS_TIMEOUT_MS = 10_000;
 // identifiers, and documents. The demos on one page share it.
 let localApi: DidBtcr2Api | null = null;
 
+// The minimum relay fee of most nodes, in sat/vB. The demos write only on
+// test networks, so this rate is also the fallback if the estimate fails.
+const MIN_FEE_RATE = 1;
+
 /**
  * The fee rate, in sat/vB, of a transaction for the next block. The value
  * comes from the Esplora route `/fee-estimates` of the network of the api.
  * The api has no fee estimate of its own: without `announce.feeRate`, it
- * uses a fixed 5 sat/vB. The result is 1 sat/vB or more, the minimum relay
- * fee of most nodes. If the request fails, the result is undefined, and the
- * api uses its default.
+ * uses a fixed 5 sat/vB. The result is 1 sat/vB or more. If the request
+ * fails, the result is 1 sat/vB.
  */
-export async function estimateFeeRate(api: DidBtcr2Api): Promise<number | undefined> {
+export async function estimateFeeRate(api: DidBtcr2Api): Promise<number> {
   try {
     const res = await fetch(`${api.btc.rest.config.host}/fee-estimates`, {
       cache: 'no-store',
       signal: AbortSignal.timeout(BTC_TIMEOUT_MS),
     });
-    if (!res.ok) return undefined;
+    if (!res.ok) return MIN_FEE_RATE;
     const rate = ((await res.json()) as Record<string, unknown>)['1'];
-    return typeof rate === 'number' && Number.isFinite(rate) ? Math.max(rate, 1) : undefined;
+    return typeof rate === 'number' && Number.isFinite(rate) ? Math.max(rate, MIN_FEE_RATE) : MIN_FEE_RATE;
   } catch {
-    return undefined;
+    return MIN_FEE_RATE;
   }
 }
 
