@@ -18,6 +18,13 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      - uses: oven-sh/setup-bun@v2
       - run: pnpm install
       - run: pnpm typecheck
+      # astro check does not typecheck .vue files.
+      - run: pnpm dlx --package vue-tsc@3 --package typescript@5.9 vue-tsc --noEmit -p tsconfig.json
+      # The offline examples run with no network. The other examples need a
+      # funded key and a DID, so only astro check covers them.
+      - run: bun src/examples/ts/create-key.ts
+      - run: bun src/examples/ts/create-external.ts | grep 'valid: true'
       - run: pnpm build
