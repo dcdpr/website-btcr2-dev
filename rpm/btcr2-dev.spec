@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        2.3.0
+Version:        2.4.0
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -55,6 +55,15 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
+* Thu Oct 01 2026 jintekc <github@jintek.consulting> - 2.4.0-1
+- Update to @did-btcr2/api 0.29.1. A beacon signal spends the confirmed
+  UTXOs of the beacon address, up to 20. The demo text describes the rule.
+- Demo: use 1 sat/vB if the fee estimate of the network fails.
+- CLI page: describe cli 0.29.
+- Build: update to Astro 7.3 and Starlight 0.42.
+- Add the favicon.
+- CI: typecheck the Vue demos and run the offline examples.
+
 * Wed Sep 30 2026 jintekc <github@jintek.consulting> - 2.3.0-1
 - Update to @did-btcr2/api 0.29. The site code uses only the api facade.
 - Demo: remove the CORS workaround. The default configuration of the api
