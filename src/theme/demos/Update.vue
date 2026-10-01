@@ -23,8 +23,8 @@ const patchesText = ref(
 );
 const patchesError = ref<string | null>(null);
 // Both ids are optional. If they are empty, the api uses the verification
-// method that publishes the signer's key and the beacon that holds the only
-// spendable UTXO.
+// method that publishes the signer's key and the only beacon that can fund
+// the signal.
 const verificationMethodId = ref('');
 const beaconId = ref('');
 const sidecarText = ref('');
@@ -248,8 +248,8 @@ const extra = computed(() =>
       </label>
     </div>
     <p class="demo-hint">
-      If an ID is empty, the api uses the verification method of the signing key and the beacon
-      that holds the only spendable UTXO.
+      If an ID is empty, the api uses the verification method of the signing key and the only
+      beacon that can fund the signal.
     </p>
 
     <div class="demo-field">
