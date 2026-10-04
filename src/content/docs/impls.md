@@ -11,5 +11,5 @@ supports, see the [cross-impl parity matrix](/parity).
 
 * [Java](/impls/java) — Universal Resolver / Universal Registrar drivers (Danube Tech).
 * [Python](/impls/py) — experimental alpha (`dcdpr/did-btcr2-py`).
-* [Rust](/impls/rs) — experimental (`dcdpr/did-btcr2-rs`).
+* [Rust](/impls/rs) — experimental (`dcdpr/did-btcr2-rust`).
 * [TypeScript](/impls/ts) — reference implementation (`@did-btcr2/method`, `@did-btcr2/api`).
