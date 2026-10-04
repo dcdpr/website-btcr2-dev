@@ -71,7 +71,7 @@ blockchain. Each layer uses the layer below it.
 ```mermaid
 flowchart TB
   L7["<b>Applications</b><br/>Identity wallets<br/>Verifiable Credential issuers and verifiers"]
-  L6["<b>DID Resolution</b><br/>resolve(did, resolutionOptions)<br/>versionId, versionTime, minConf (default 6)<br/>DID document metadata:<br/>versionId, confirmations, deactivated"]
+  L6["<b>DID Resolution</b><br/>resolve(did, resolutionOptions)<br/>versionId, versionTime, minConf (default 6)<br/>DID document metadata:<br/>versionId, confirmations, deactivated,<br/>updated (after an update)"]
   L5["<b>Update authorization</b><br/>BTCR2 Signed Update<br/>Data Integrity Proof (bip340-jcs-2025)<br/>Root Capability: capabilityInvocation, Write<br/>BIP340 Schnorr signature"]
   L4["<b>DID document state</b><br/>Genesis Bytes: public key<br/>or Genesis Document<br/>Initial DID Document, Current DID Document<br/>BTCR2 Unsigned Update: JSON Patch,<br/>sourceHash, targetHash, targetVersionId<br/>JSON Document Hashing: JCS, then SHA-256"]
   L3["<b>Update data distribution (off-chain)</b><br/>Sidecar Data<br/>CAS (IPFS CIDv1, raw)"]

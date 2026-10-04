@@ -13,22 +13,32 @@ The update has three steps. The resolver of each relying party finds the update 
 
 ```mermaid
 flowchart TD
-  Start(["update(didSourceDocument, jsonPatch,<br/>targetVersionId, verificationMethodId, signer)"])
-  Version["targetVersionId = versionId + 1,<br/>from a fresh resolution of the DID"]
+  Start(["update(sourceDidDocument, jsonPatch,<br/>targetVersionId, verificationMethodId, signer)"])
+  Version["Fresh resolution of the DID:<br/>sourceDidDocument = the DID document,<br/>targetVersionId = versionId + 1"]
   Unsigned[["Construct BTCR2 Unsigned Update"]]
   Signed[["Construct BTCR2 Signed Update"]]
   Check["Verify update.proof (SHOULD)"]
+  Caught{"versionId at least the highest<br/>targetVersionId already announced?"}
+  Wait["Wait until the last announced update<br/>has minConf confirmations,<br/>then resolve again"]
   Announce[["Announce DID Update"]]
   Return[/"Return signedUpdate"/]
   Keep["Keep the BTCR2 Signed Update for Sidecar Data,<br/>or publish it to CAS"]
 
-  Version -.-> Start
+  Version -.-> Caught
+  Caught -.->|"no"| Wait -.-> Version
+  Caught -.->|"yes"| Start
   Start --> Unsigned --> Signed --> Check --> Announce --> Return
   Return -.-> Keep
 ```
 
-Use the `versionId` of a fresh resolution for `targetVersionId`. Do not use a local count. An announced update with an
-incorrect `targetVersionId` or an incorrect proof can make the DID unresolvable.
+Use the `versionId` and the DID document of a fresh resolution for `targetVersionId` and `sourceDidDocument`. Do not
+use a local count. An announced update with an incorrect `targetVersionId` or an incorrect proof can make the DID
+unresolvable.
+
+The DID controller MUST NOT announce an update if it cannot resolve all previous updates of the DID. That is the case
+when the fresh resolution returns a `versionId` less than the highest `targetVersionId` that the DID controller
+announced. Then the DID controller resolves the DID again after the Beacon Signal of the last announced update has
+`resolutionOptions.minConf` confirmations.
 
 ## Construct BTCR2 Unsigned Update
 
@@ -40,11 +50,11 @@ applies the patch and records the hashes of the source and target DID documents.
 flowchart TD
   classDef error fill:#fdecea,stroke:#b3261e,color:#b3261e
 
-  Start(["Construct BTCR2 Unsigned Update"]) --> Patch["Apply jsonPatch to didSourceDocument<br/>to make didTargetDocument"]
+  Start(["Construct BTCR2 Unsigned Update"]) --> Patch["Apply jsonPatch to sourceDidDocument<br/>to make targetDidDocument"]
   Patch -->|"malformed, or an operation fails"| Err(["INVALID_DID_UPDATE"]):::error
-  Patch --> Valid{"didTargetDocument conformant<br/>to DID Core v1.1, and<br/>id not changed?"}
+  Patch --> Valid{"targetDidDocument conformant<br/>to DID Core v1.1, and<br/>id not changed?"}
   Valid -->|"no"| Err
-  Valid -->|"yes"| Fill["Fill the template:<br/>@context (four context URLs)<br/>patch = jsonPatch<br/>sourceHash = H(didSourceDocument)<br/>targetHash = H(didTargetDocument)<br/>targetVersionId"]
+  Valid -->|"yes"| Fill["Fill the template:<br/>@context (four context URLs)<br/>patch = jsonPatch<br/>sourceHash = H(sourceDidDocument)<br/>targetHash = H(targetDidDocument)<br/>targetVersionId"]
   Fill --> Return[/"BTCR2 Unsigned Update"/]
 ```
 
@@ -58,13 +68,13 @@ has access to it. An external signer is RECOMMENDED.
 flowchart TD
   classDef error fill:#fdecea,stroke:#b3261e,color:#b3261e
 
-  Start(["Construct BTCR2 Signed Update"]) --> Find{"An entry of didSourceDocument<br/>.capabilityInvocation identifies<br/>verificationMethodId?"}
+  Start(["Construct BTCR2 Signed Update"]) --> Find{"An entry of sourceDidDocument<br/>.capabilityInvocation identifies<br/>verificationMethodId?"}
   Find -->|"no"| Err(["INVALID_DID_UPDATE"]):::error
-  Find -->|"yes: reference"| Lookup{"didSourceDocument.verificationMethod<br/>has that id?"}
+  Find -->|"yes: reference"| Lookup{"sourceDidDocument.verificationMethod<br/>has that id?"}
   Lookup -->|"no"| Err
   Lookup -->|"yes"| Suite
   Find -->|"yes: embedded object"| Suite["Create a BIP340 Cryptosuite:<br/>bip340-jcs-2025 with the signer"]
-  Suite --> Config["Fill the Data Integrity Config:<br/>type DataIntegrityProof<br/>verificationMethod<br/>proofPurpose capabilityInvocation<br/>capability urn:zcap:root:(encoded did)<br/>capabilityAction Write"]
+  Suite --> Config["Fill the Data Integrity Config:<br/>type DataIntegrityProof<br/>verificationMethod<br/>proofPurpose capabilityInvocation<br/>capability urn:zcap:root:(encoded did)<br/>capabilityAction Write<br/>invocationTarget = sourceDidDocument.id"]
   Config --> Proof["cryptosuite.createProof(update, proofConfig)"]
   Proof --> Return[/"BTCR2 Signed Update<br/>(the unsigned update and its proof)"/]
 ```
@@ -77,7 +87,7 @@ Beacon Signal of an Aggregate Beacon.
 
 ```mermaid
 flowchart TD
-  Start(["Announce DID Update"]) --> Select["Select one or more BTCR2 Beacons<br/>in didSourceDocument.service"]
+  Start(["Announce DID Update"]) --> Select["Select one or more BTCR2 Beacons<br/>in sourceDidDocument.service"]
   Select --> Type{"Beacon Type"}
   Type -->|"Singleton Beacon"| Hash["Signal Bytes = JSON Document Hash<br/>of the BTCR2 Signed Update"]
   Hash --> Build["Construct the Beacon Signal:<br/>spend a UTXO of the Beacon Address,<br/>last output OP_RETURN and Signal Bytes"]
@@ -125,7 +135,7 @@ Deactivation is permanent. After the resolver applies the deactivation update, r
 
 ```mermaid
 flowchart TD
-  Start(["deactivate(didSourceDocument, targetVersionId,<br/>verificationMethodId, signer)"])
+  Start(["deactivate(sourceDidDocument, targetVersionId,<br/>verificationMethodId, signer)"])
   Patch["jsonPatch: add /deactivated = true"]
   Update[["Update operation"]]
   Signed[/"BTCR2 Signed Update"/]
@@ -135,7 +145,8 @@ flowchart TD
   Start --> Patch --> Update --> Signed --> Resolver --> Stop
 ```
 
-This example shows a BTCR2 Signed Update that deactivates a DID at version 3. The values are shortened.
+This example shows a BTCR2 Signed Update that deactivates a DID at version 3. The values are shortened and illustrative;
+they don't come from one DID.
 
 ```json
 {
@@ -168,6 +179,7 @@ This example shows a BTCR2 Signed Update that deactivates a DID at version 3. Th
     "proofPurpose": "capabilityInvocation",
     "capability": "urn:zcap:root:did%3Abtcr2%3Ak1q5p...",
     "capabilityAction": "Write",
+    "invocationTarget": "did:btcr2:k1q5p...",
     "proofValue": "z313jDDznRsbnr85HMnVFRrLYxsrbQFB..."
   }
 }

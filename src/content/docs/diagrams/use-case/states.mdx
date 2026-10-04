@@ -10,8 +10,8 @@ Each actor of the key rotation use case has one state machine.
 
 ## DID controller (Stuart)
 
-Only one update is in flight. Do not make the next update before the last update has 6 confirmations. Two updates
-with one `targetVersionId` make the DID fail with `LATE_PUBLISHING`.
+Only one update is in flight. Do not make the next update before the last update has 6 confirmations. Two different
+updates with one `targetVersionId` make the DID fail with `LATE_PUBLISHING`.
 
 <MermaidFile file="use-case/states-did-controller.mmd" />
 
