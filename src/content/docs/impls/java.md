@@ -25,7 +25,7 @@ Content-Type: application/json
 
 {
   "didDocument": { ... },
-  "options": { "network": "regtest" }
+  "options": { "network": "mutinynet" }
 }
 ```
 
@@ -52,9 +52,18 @@ Content-Type: application/json
 {
   "did": "did:btcr2:k1...",
   "didDocumentOperation": ["addToDidDocument"],
-  "didDocument": [ { ... } ]
+  "didDocument": [ { ... } ],
+  "options": {
+    "didSourceDocument": { ... },
+    "targetVersionId": 2
+  }
 }
 ```
+
+`options.didSourceDocument` (the current DID document) and `options.targetVersionId`
+are required. `beaconServiceId`, `beaconServiceType` and `publishToIpfs` are optional.
+See the [registrar driver README](https://github.com/danubetech/uni-registrar-driver-did-btcr2#update-and-deactivate)
+for the options.
 
 ## Deactivate
 
@@ -62,10 +71,15 @@ Content-Type: application/json
 POST https://uniregistrar.io/1.0/deactivate?method=btcr2
 Content-Type: application/json
 
-{ "did": "did:btcr2:k1..." }
+{
+  "did": "did:btcr2:k1...",
+  "options": {
+    "didSourceDocument": { ... },
+    "targetVersionId": 3
+  }
+}
 ```
 
 ## Contributing
 
-File issues against the appropriate driver repo. PRs are welcomed by the
-Danube Tech maintainers; see each repo's `CONTRIBUTING` document for details.
+File issues and PRs against the appropriate driver repo.
