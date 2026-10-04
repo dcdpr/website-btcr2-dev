@@ -14,7 +14,7 @@ The resolver keeps this state:
 - `current_document`: the Current DID Document.
 - `current_version_id`: the version of `current_document`. The start value is `1`.
 - `update_hash_history`: the hashes of the applied BTCR2 Unsigned Updates.
-- `block_confirmations` and `current_block_height`: the block of the last applied update.
+- `block_confirmations`, `block_mediantime` and `current_block_height`: the block of the last applied update.
 
 ## Resolution sequence
 
@@ -68,7 +68,7 @@ flowchart TD
   Find[["Find Beacon Signals"]]
   Next[["Process Next Update"]]
   Done{"didDocument<br/>resolved?"}
-  Return[/"Return didResolutionMetadata,<br/>didDocument, didDocumentMetadata<br/>(versionId, confirmations, deactivated)"/]
+  Return[/"Return didResolutionMetadata,<br/>didDocument, didDocumentMetadata<br/>(versionId, confirmations, deactivated,<br/>updated after an update)"/]
   ErrDID(["INVALID_DID"]):::error
   ErrOptions(["INVALID_OPTIONS"]):::error
 
@@ -240,7 +240,7 @@ flowchart TD
   Valid -->|"no"| Err
   Valid -->|"yes"| Target{"JSON Document Hash of<br/>current_document<br/>= update.targetHash?"}
   Target -->|"no"| Err
-  Target -->|"yes"| Record["Append the unsigned update hash<br/>to update_hash_history.<br/>Set block_confirmations and<br/>current_block_height.<br/>Increment current_version_id."]
+  Target -->|"yes"| Record["Append the unsigned update hash<br/>to update_hash_history.<br/>Set block_confirmations,<br/>block_mediantime and<br/>current_block_height.<br/>Increment current_version_id."]
 ```
 
 ### Check update.proof
@@ -255,7 +255,7 @@ flowchart TD
 
   Start(["Check update.proof"]) --> Ctx{"update @context is the required array,<br/>and proof @context = update @context?"}
   Ctx -->|"no"| Err(["INVALID_DID_UPDATE"]):::error
-  Ctx -->|"yes"| Purpose{"proofPurpose = capabilityInvocation,<br/>capabilityAction = Write, and<br/>capability = urn:zcap:root:(encoded did)?"}
+  Ctx -->|"yes"| Purpose{"proofPurpose = capabilityInvocation,<br/>capabilityAction = Write,<br/>capability = urn:zcap:root:(encoded did),<br/>and invocationTarget = did?"}
   Purpose -->|"no"| Err
   Purpose -->|"yes"| VM{"An entry of current_document<br/>.capabilityInvocation identifies<br/>proof.verificationMethod?"}
   VM -->|"no"| Err

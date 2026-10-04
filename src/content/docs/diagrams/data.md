@@ -45,6 +45,7 @@ classDiagram
     proofPurpose: capabilityInvocation
     capability: urn:zcap:root:...
     capabilityAction: Write
+    invocationTarget: did
     proofValue
   }
   class CASAnnouncement["CAS Announcement"] {
