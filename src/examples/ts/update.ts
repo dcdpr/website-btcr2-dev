@@ -12,8 +12,8 @@ const signer = api.kms.signer(api.kms.import(api.crypto.keypair.fromSecret(secre
 
 // Link a website to the DID. The api resolves the current document first.
 // verificationMethodId and beaconId are optional: the api uses the method
-// that publishes the signer's key and the beacon that holds the only
-// spendable UTXO.
+// that publishes the signer's key and the only beacon that can fund the
+// signal.
 const result = await api.updateDid(did, [{
   op: 'add',
   path: '/service/-',

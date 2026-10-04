@@ -120,7 +120,8 @@ btcr2 resolve -i alice
 
 The CLI reads the beacon signals from the network of the DID and applies each
 update that the sidecar data or the CAS supplies. The output is the DID document
-and its metadata (`versionId`, `confirmations`, `deactivated`).
+and its metadata (`versionId`, `confirmations`, `deactivated`, and `updated`
+after an update).
 
 Sidecar data comes from the DID controller:
 
@@ -145,8 +146,8 @@ wait for one confirmation.
 
 ```sh
 DID=$(btcr2 -o json identifier show alice | jq -r '.data.identifier')
-PATCH=$(jq -nc --arg id "$DID#website" \
-  '[{op: "add", path: "/service/-", value: {id: $id, type: "LinkedDomains", serviceEndpoint: "https://example.com"}}]')
+PATCH=$(jq -nc --arg id "$DID#blog" \
+  '[{op: "add", path: "/service/-", value: {id: $id, type: "LinkedDomains", serviceEndpoint: "https://blog.example.com"}}]')
 btcr2 update -i alice -p "$PATCH"
 ```
 
