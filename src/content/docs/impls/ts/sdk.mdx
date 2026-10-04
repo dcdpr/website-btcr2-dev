@@ -120,7 +120,9 @@ signer.
 
 Every update failure that the specification names is an `UpdateError` of type
 `INVALID_DID_UPDATE`. Examples: a patch that fails to apply, a key that the
-document does not list in `capabilityInvocation`, and a deactivated DID.
+document does not list in `capabilityInvocation`, and a deactivated DID. A
+signing key that is not a `Multikey` with a `zQ3s` public key is an
+`UpdateError` of type `INVALID_DID_DOCUMENT`.
 
 ### Publish to a CAS
 

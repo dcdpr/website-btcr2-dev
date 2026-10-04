@@ -24,8 +24,8 @@ complete implementation, and the [Demo](/demo/) runs it in your browser.
 
 :::note[Status]
 The SDK and the CLI are ready to use. The packages are 0.x, so a minor release
-(for example 0.27 to 0.28) can contain breaking changes. Read the changelog of
-the package before a minor bump.
+(a change of the second number) can contain breaking changes. Read the
+changelog of the package before a minor bump.
 :::
 
 ## Packages
@@ -34,7 +34,7 @@ Start with the SDK or the CLI. They include the lower-level packages.
 
 | Package | Purpose |
 |---|---|
-| [`@did-btcr2/api`](https://www.npmjs.com/package/@did-btcr2/api) | The SDK. One facade for the DID operations, the Bitcoin connection, key management, and the CAS. It re-exports the key pair, signer, and genesis document helpers. |
+| [`@did-btcr2/api`](https://www.npmjs.com/package/@did-btcr2/api) | The SDK. One facade for the DID operations, the Bitcoin connection, key management, and the CAS. Key pairs, signers, and genesis documents are functions of its sub-facades (`api.crypto`, `api.kms`, `api.btcr2`). It does not re-export the classes of the lower packages. |
 | [`@did-btcr2/cli`](https://www.npmjs.com/package/@did-btcr2/cli) | The `btcr2` command. It wraps the SDK and adds an encrypted keystore and config profiles. |
 | [`@did-btcr2/method`](https://www.npmjs.com/package/@did-btcr2/method) | The sans-I/O DID Method: identifiers, beacons, and the Resolver and Updater state machines. Use it to customize the protocol. |
 | [`@did-btcr2/aggregation`](https://www.npmjs.com/package/@did-btcr2/aggregation) | Multi-party aggregate beacons (CAS and SMT) with MuSig2, over Nostr or HTTP transports. |
