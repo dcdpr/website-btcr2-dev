@@ -15,7 +15,7 @@ today. Use it to pick an implementation that fits your stack.
 | **Resolve** — sidecar | ✅ | ⚠️ | 🚧 | 🚧 |
 | **Resolve** — CAS / IPFS | ✅ | ⚠️ | 🚧 | 🚧 |
 | **Update** — Singleton beacon | ✅ | ⚠️ | 🚧 | 🚧 |
-| **Update** — Map / SMT beacon | 🚧 | 🚧 | 🚧 | 🚧 |
+| **Update** — CAS / SMT beacon | 🚧 | 🚧 | 🚧 | 🚧 |
 | **Deactivate** | ✅ | ⚠️ | 🚧 | 🚧 |
 
 ## Bitcoin networks
