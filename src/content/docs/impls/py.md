@@ -2,15 +2,17 @@
 title: Python
 ---
 
-The Python reference implementation lives at
+The Python implementation lives at
 [`dcdpr/did-btcr2-py`](https://github.com/dcdpr/did-btcr2-py).
 
-> **Status** — Experimental alpha. No PyPI package yet — install from source.
+> **Status** — Experimental alpha. It implements the earlier did:btc1 draft of the
+> specification, not the current did:btcr2 specification. The last commit is from
+> 2025-07-30. No PyPI package yet — install from source.
 
 ## Install
 
 ```sh
-pip install libbtcr2@git+https://github.com/dcdpr/did-btcr2-py
+pip install libbtc1@git+https://github.com/dcdpr/did-btcr2-py
 ```
 
 From source:
@@ -51,4 +53,4 @@ pip install -r requirements.txt
 ## Contributing
 
 Fork <https://github.com/dcdpr/did-btcr2-py>, create a virtualenv, run the
-test suite (`pytest`), submit a PR.
+test suite (`python -m unittest`), submit a PR.
