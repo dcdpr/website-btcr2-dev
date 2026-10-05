@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        2.4.0
+Version:        2.5.0
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -55,6 +55,17 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
+* Mon Oct 05 2026 jintekc <github@jintek.consulting> - 2.5.0-1
+- Publish the did:btcr2 JSON-LD context at /context/v1 and its
+  vocabulary at /ns. The nginx configuration must serve both as
+  application/ld+json.
+- Update to @did-btcr2/api 0.32. An update proof names the DID in
+  invocationTarget. The demo refuses an update if the resolution does not
+  apply all updates of the sidecar data.
+- Rust page: describe the current Rust implementation.
+- Align the diagrams and the TypeScript, Python, Java, and parity pages
+  with the current specification and implementations.
+
 * Thu Oct 01 2026 jintekc <github@jintek.consulting> - 2.4.0-1
 - Update to @did-btcr2/api 0.29.1. A beacon signal spends the confirmed
   UTXOs of the beacon address, up to 20. The demo text describes the rule.
