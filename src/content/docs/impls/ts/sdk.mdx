@@ -124,6 +124,11 @@ document does not list in `capabilityInvocation`, and a deactivated DID. A
 signing key that is not a `Multikey` with a `zQ3s` public key is an
 `UpdateError` of type `INVALID_DID_DOCUMENT`.
 
+Before the next update, wait until the beacon signal of the last update has
+`minConf` confirmations (default 6). The api compares the resolved `versionId`
+with the signed updates in `resolutionOptions.sidecar`. If the resolution does
+not apply all of them, the api refuses the update with `INVALID_DID_UPDATE`.
+
 ### Publish to a CAS
 
 By default, the api publishes nothing (`publishToCas: 'never'`). The controller

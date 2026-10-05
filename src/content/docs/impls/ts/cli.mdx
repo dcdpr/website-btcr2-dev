@@ -157,6 +157,10 @@ a resolver needs the signed update as sidecar data, unless you publish it to a
 CAS. `btcr2 identifier sidecar alice --out sidecar.json` writes the sidecar data
 file for the relying parties.
 
+Before the next `update` or `deactivate`, wait until the beacon signal of the
+last update has 6 confirmations. If the resolution does not apply all updates of
+the record, the CLI refuses the command.
+
 `-m` (the verification method) and `-b` (the beacon) are optional: the CLI uses
 the method that publishes the signing key and the beacon that can fund the
 signal. `--fee-rate` sets the fee rate in sat/vB. The default is 5 sat/vB.

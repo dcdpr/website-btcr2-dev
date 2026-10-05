@@ -102,6 +102,12 @@ The response includes the signed update and the signal `txid`. The "Sidecar for
 Resolve" output adds the signed update to the sidecar data that you gave. Paste
 it into Resolve, or into the next Update.
 
+Before the next Update or Deactivate, wait until the beacon signal of the last
+update has `minConf` confirmations. The api compares the resolved version with
+the signed updates in the sidecar data. If the resolution does not apply all of
+them, the api refuses the update. A second update for the same version makes the
+DID fail with `LATE_PUBLISHING`.
+
 The Update and Deactivate demos refuse a `bitcoin` (mainnet) DID.
 
 <DemoUpdate client:only="vue" />
