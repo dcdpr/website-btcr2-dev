@@ -21,7 +21,7 @@
   "dependencies": {
     "@astrojs/starlight": "^0.42.0",
     "@astrojs/vue": "^7.0.1",
-    "@did-btcr2/api": "^0.29.1",
+    "@did-btcr2/api": "^0.32.0",
     "astro": "^7.3.0",
     "astro-mermaid": "^2.1.0",
     "highlight.js": "^11.11.1",
