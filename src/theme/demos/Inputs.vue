@@ -23,7 +23,7 @@ const mode = ref<'keys' | 'genesis'>('keys');
 const keyFields = computed(() => [
   { label: 'Public key (hex, 33 bytes), for Create', value: demoKeyPair.value?.publicKey ?? '' },
   {
-    label: 'Secret key (hex, 32 bytes), for Update and Deactivate',
+    label: 'Secret key (hex, 32 bytes), for Update, Deactivate, and Sign',
     value: demoKeyPair.value?.secretKey ?? '',
   },
 ]);
