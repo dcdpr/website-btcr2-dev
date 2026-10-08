@@ -1,5 +1,5 @@
 Name:           btcr2-dev
-Version:        2.5.0
+Version:        2.6.0
 Release:        1%{?dist}
 Summary:        Static website
 
@@ -55,6 +55,16 @@ if [ $1 -ge 1 ]; then
 fi
 
 %changelog
+* Thu Oct 08 2026 jintekc <github@jintek.consulting> - 2.6.0-1
+- Update to @did-btcr2/api 0.34. A resolve reads the full history of
+  each beacon address.
+- SDK and CLI pages: sign a text message with a did:btcr2 identifier,
+  and verify a signed message.
+- Demo: a Sign and Verify Message card.
+- Home page: link late publishing to its definition in the
+  specification, and state that updates can be aggregated across an
+  unlimited number of users.
+
 * Mon Oct 05 2026 jintekc <github@jintek.consulting> - 2.5.0-1
 - Publish the did:btcr2 JSON-LD context at /context/v1 and its
   vocabulary at /ns. The nginx configuration must serve both as
