@@ -57,7 +57,9 @@ const api = createApi({
 
 Other `btc` options:
 
-* `rest: { host, headers }` sets your own Esplora host.
+* `rest: { host, headers }` sets your own Esplora host. The host must meet the
+  [Esplora server requirements](https://github.com/dcdpr/did-btcr2-js/tree/main/packages/bitcoin#esplora-server-requirements):
+  for example, a mempool instance needs `MEMPOOL_BACKEND=esplora`.
 * `rpc` sets a Bitcoin Core RPC client.
 * `executor` sets your own HTTP client.
 * `timeoutMs` sets a request timeout.
