@@ -59,8 +59,9 @@ then a prompt. `btcr2 keystore unlock --ttl 2h` keeps a session, and
 
 The CLI keeps one record for each identifier in `~/.btcr2/dids.json`: a name,
 the keys, the signing key, and the sidecar data. The record holds no secret key.
-`create`, `update`, and `deactivate` write the record. `resolve`, `update`, and
-`deactivate` accept the name of a record in `-i`, and use its sidecar data.
+`create`, `update`, and `deactivate` write the record. `resolve`, `update`,
+`deactivate`, and `message` accept the name of a record in `-i`, and use its
+sidecar data.
 `btcr2 identifier list` shows the records.
 
 ## Create
@@ -192,6 +193,32 @@ btcr2 deactivate -i alice
 The record supplies the signing key and the sidecar data of the earlier updates.
 The CLI adds the deactivation to the record. A resolver needs it as sidecar data
 to see the deactivation, so give the relying parties a new sidecar data file.
+
+## Sign a message
+
+```sh
+btcr2 message sign -i alice "I control this DID. 2026-10-08 nonce 7f3a" > message.json
+```
+
+`message sign` resolves the current DID document and signs the text with the key
+of the record. The output is the text and a `bip340-jcs-2025` Data Integrity
+proof with the proof purpose `assertionMethod`. Thus a message signature is never
+valid as an update proof or as a transaction signature. The format has no time
+and no replay protection: put the date, a nonce, and the audience in the text.
+The shell history shows the text, so do not sign a secret.
+
+The specification does not define message signatures: the format is a choice of
+this implementation.
+
+```sh
+btcr2 message verify -i did:btcr2:k1q... --sidecar sidecar.json message.json
+```
+
+`message verify` checks the signed message against the current DID document. It
+needs the sidecar data of the DID, as `resolve` does. A failed check gives the
+exit code `1`. After a key rotation or a deactivation, an old message fails. The
+[`message` reference](https://github.com/dcdpr/did-btcr2-js/blob/main/packages/cli/docs/message.md)
+also shows how to verify a message with no btcr2 code.
 
 ## Use in scripts
 

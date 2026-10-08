@@ -9,6 +9,8 @@ import createExternal from '../../../../examples/ts/create-external.ts?raw';
 import resolveExample from '../../../../examples/ts/resolve.ts?raw';
 import updateExample from '../../../../examples/ts/update.ts?raw';
 import deactivateExample from '../../../../examples/ts/deactivate.ts?raw';
+import signMessageExample from '../../../../examples/ts/sign-message.ts?raw';
+import verifyMessageExample from '../../../../examples/ts/verify-message.ts?raw';
 
 `@did-btcr2/api` is the SDK of the TypeScript implementation. `createApi()`
 returns one facade for the DID operations, the Bitcoin connection, key
@@ -156,6 +158,29 @@ Deactivation is an update with the patch
 `api.deactivateDid()` adds the patch for you. Deactivation is permanent.
 
 <Code code={deactivateExample} lang="ts" title="deactivate.ts" />
+
+## Sign a message
+
+A key of the DID can sign a text message. `api.btcr2.signMessage()` returns
+the text and a `bip340-jcs-2025` Data Integrity proof. The proof purpose is
+always `assertionMethod`, so a message signature is never valid as an update
+proof or as a transaction signature
+([ADR 137](https://github.com/dcdpr/did-btcr2-js/blob/main/docs/adr/137-a-signed-message-is-an-assertion-proof-that-verify-checks-against-the-current-did-document.md)).
+The specification does not define message signatures: the format is a choice
+of this implementation.
+
+`api.btcr2.verifyMessage()` checks a signed message against a DID document and
+returns a report. Neither function reads the network, so give each function the
+current DID document from a resolution.
+
+<Tabs>
+  <TabItem label="Sign">
+    <Code code={signMessageExample} lang="ts" title="sign-message.ts" />
+  </TabItem>
+  <TabItem label="Verify">
+    <Code code={verifyMessageExample} lang="ts" title="verify-message.ts" />
+  </TabItem>
+</Tabs>
 
 ## Use in a browser
 
